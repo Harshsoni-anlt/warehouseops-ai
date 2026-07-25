@@ -171,7 +171,7 @@ def main():
             preds.append((m, sku, _dt(days_ago=random.randint(0, 6)),
                           random.choice([7, 14, 30]), round(pv, 2), round(av, 2), "{}"))
     cur.executemany(
-        "INSERT INTO model_predictions (model_name, sku, prediction_date, horizon_days, predicted_value, actual_value, metadata) VALUES (?,?,?,?,?,?,?)",
+        "INSERT INTO model_predictions (model_name, sku, prediction_date, forecast_horizon_days, predicted_value, actual_value, metadata) VALUES (?,?,?,?,?,?,?)",
         preds,
     )
 

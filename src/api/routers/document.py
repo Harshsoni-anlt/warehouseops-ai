@@ -952,6 +952,36 @@ async def process_document_background(
     user_id: str,
     metadata: Dict[str, Any],
 ):
+    """Watchdog wrapper: a document must never sit in 'processing' forever.
+    Caps the whole pipeline and always resolves to completed or failed."""
+    try:
+        await asyncio.wait_for(
+            _process_document_pipeline(document_id, file_path, document_type, user_id, metadata),
+            timeout=200,
+        )
+    except asyncio.TimeoutError:
+        logger.error(f"Document {_sanitize_log_data(document_id)} timed out; marking failed")
+        try:
+            tools = await get_document_tools()
+            if document_id in tools.document_statuses:
+                d = tools.document_statuses[document_id]
+                d["status"] = ProcessingStage.FAILED
+                d["progress"] = 0
+                d["current_stage"] = "Failed: processing timed out"
+                tools._save_status_data()
+        except Exception:
+            pass
+    except Exception as e:
+        logger.error(f"Document {_sanitize_log_data(document_id)} watchdog error: {e}")
+
+
+async def _process_document_pipeline(
+    document_id: str,
+    file_path: str,
+    document_type: str,
+    user_id: str,
+    metadata: Dict[str, Any],
+):
     """Process an uploaded document on the free stack: extract text with
     pdfplumber, then use the LLM (Groq) to pull structured fields. Updates the
     document status through to COMPLETED so the UI shows a real result."""

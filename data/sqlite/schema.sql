@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS model_predictions (
   model_name TEXT NOT NULL,
   sku TEXT,
   prediction_date TEXT DEFAULT (datetime('now')),
-  horizon_days INTEGER,
+  forecast_horizon_days INTEGER,
   predicted_value REAL,
   actual_value REAL,
   metadata TEXT DEFAULT '{}'
