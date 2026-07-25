@@ -174,18 +174,24 @@ class InventoryAgent:
 
         if kind == "summary":
             s = fetched["summary"] or {}
+            low = s.get("low_stock_count", 0) or 0
+            tail = (
+                "Nothing is at or below its reorder point."
+                if low == 0
+                else f"**{low}** {'is' if low == 1 else 'are'} at or below the reorder point."
+            )
             return (
                 f"There are **{s.get('total_items', 0):,} SKUs** in inventory totalling "
-                f"**{s.get('total_quantity', 0):,} units**. "
-                f"**{s.get('low_stock_count', 0)}** are at or below their reorder point."
+                f"**{s.get('total_quantity', 0):,} units**. " + tail
             )
 
         if kind == "low_stock":
             items = fetched["items"]
             if not items:
                 return "Nothing is at or below its reorder point right now."
+            noun = "item is" if len(items) == 1 else "items are"
             return (
-                f"**{len(items)}** item(s) are at or below their reorder point:\n\n"
+                f"**{len(items)}** {noun} at or below the reorder point:\n\n"
                 + InventoryAgent._format_items(items)
             )
 
@@ -215,9 +221,11 @@ class InventoryAgent:
                     )
             return body
 
+        more = f"\n\n_Showing 10 of {len(items)}._" if len(items) > 10 else ""
         return (
             f"Found **{len(items)}** matching items:\n\n"
             + InventoryAgent._format_items(items)
+            + more
         )
 
     # ------------------------------------------------------------------ entry

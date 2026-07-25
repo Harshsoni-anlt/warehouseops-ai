@@ -256,9 +256,10 @@ def _format_user_response(
             recommendations_section = _format_recommendations_section(user_recommendations)
             formatted_response += recommendations_section
 
-        # Add confidence indicator and timestamp footer (only for successful responses)
-        formatted_response = _add_response_footer(formatted_response, confidence)
-
+        # NOTE: confidence and timestamp are deliberately NOT appended to the
+        # text. They are separate fields on the response, and the chat bubble
+        # already renders both in its header — appending them here printed
+        # "🟢 90% / 12:36:43 AM" a second time at the end of every answer.
         return formatted_response
 
     except Exception as e:
@@ -442,9 +443,12 @@ def _clean_response_text(response: str) -> str:
         # Remove any remaining object representations
         response = re.sub(r"ReasoningChain\([^)]+\)", "", response, flags=re.DOTALL)
         
-        # Clean up multiple spaces and newlines
-        response = re.sub(r"\s+", " ", response)
-        response = re.sub(r"\n\s*\n", "\n\n", response)
+        # Collapse runs of spaces/tabs but KEEP newlines. This used to be
+        # `\s+ -> " "`, which flattened every bulleted list the agents produce
+        # into one unreadable line (and made the next rule a no-op).
+        response = re.sub(r"[ \t]+", " ", response)
+        response = re.sub(r" *\n *", "\n", response)
+        response = re.sub(r"\n{3,}", "\n\n", response)
         
         # Remove leading/trailing whitespace
         response = response.strip()
@@ -957,9 +961,25 @@ async def chat(req: ChatRequest):
                         logger.error(f"Evidence enhancement error: {_sanitize_log_data(str(e))}")
                         enhanced_response = None
                     
-                    # Update result with evidence if available
+                    # Update result with evidence if available.
+                    #
+                    # The evidence layer is an *enhancement*, so it must never
+                    # replace a good answer with a worse one. It has a fallback
+                    # path ("I'm having trouble gathering evidence…") that used
+                    # to overwrite grounded agent answers wholesale — a correct
+                    # inventory lookup would come back as an apology. Only take
+                    # its text when it actually found evidence.
                     if enhanced_response:
-                        result["response"] = enhanced_response.response
+                        is_fallback = bool(
+                            (enhanced_response.response_metadata or {}).get("fallback")
+                        )
+                        has_evidence = (enhanced_response.evidence_count or 0) > 0
+                        if has_evidence and not is_fallback and enhanced_response.response:
+                            result["response"] = enhanced_response.response
+                        elif is_fallback:
+                            logger.info(
+                                "Evidence layer fell back; keeping the agent's answer"
+                            )
                         result["evidence_summary"] = enhanced_response.evidence_summary
                         result["source_attributions"] = enhanced_response.source_attributions
                         result["evidence_count"] = enhanced_response.evidence_count
@@ -971,12 +991,19 @@ async def chat(req: ChatRequest):
                                 original_confidence, enhanced_response.confidence_score
                             )
                         
-                        # Merge recommendations
+                        # Merge recommendations, agent's first, order preserved
+                        # (a set() here made the order change between identical
+                        # requests). Fallback recommendations are generic
+                        # troubleshooting advice, so drop them.
                         original_recommendations = structured_response.get("recommendations", [])
-                        evidence_recommendations = enhanced_response.recommendations or []
-                        all_recommendations = list(
-                            set(original_recommendations + evidence_recommendations)
+                        evidence_recommendations = (
+                            [] if is_fallback else (enhanced_response.recommendations or [])
                         )
+                        seen: set = set()
+                        all_recommendations = [
+                            r for r in list(original_recommendations) + list(evidence_recommendations)
+                            if not (r in seen or seen.add(r))
+                        ]
                         if all_recommendations:
                             result["recommendations"] = all_recommendations
 

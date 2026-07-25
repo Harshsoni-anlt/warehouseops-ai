@@ -1,4 +1,5 @@
 import React from 'react';
+import RichText from './RichText';
 import {
   Box,
   Typography,
@@ -66,6 +67,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+  const [showSource, setShowSource] = React.useState(false);
 
   const getAgentIcon = (route?: string) => {
     switch (route) {
@@ -209,21 +211,64 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
-    // Fallback: render as JSON if it's an object
+    // Fallback: the raw payload behind the answer.
+    //
+    // This used to dump JSON under every reply. It is genuinely useful — it
+    // shows the answer came from rows and not from the model — but as the
+    // default view it made a finished product look like a debug console. So
+    // it is collapsed, and labelled as what it is: the source data.
     if (typeof message.structured_data === 'object') {
       return (
-        <Card sx={{ mt: 1, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-              Structured Data
-            </Typography>
-            <Box sx={{ backgroundColor: 'background.default', p: 1, borderRadius: 1, fontFamily: 'monospace', fontSize: '10px', border: '1px solid', borderColor: 'divider' }}>
-              <pre style={{ color: 'inherit', margin: 0, whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(message.structured_data, null, 2)}
-              </pre>
+        <Box sx={{ mt: 1.25 }}>
+          <Box
+            component="button"
+            onClick={() => setShowSource((v) => !v)}
+            sx={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              fontSize: 12,
+              color: 'text.secondary',
+              '&:hover': { color: 'text.primary' },
+            }}
+          >
+            <Box component="span" sx={{ fontSize: 10, lineHeight: 1 }}>
+              {showSource ? '▾' : '▸'}
             </Box>
-          </CardContent>
-        </Card>
+            {showSource ? 'Hide source data' : 'Show source data'}
+          </Box>
+
+          {showSource && (
+            <Box
+              sx={{
+                mt: 1,
+                p: 1.25,
+                borderRadius: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.default',
+                maxHeight: 260,
+                overflow: 'auto',
+              }}
+            >
+              <Box
+                component="pre"
+                sx={{
+                  m: 0,
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  fontSize: 11,
+                  lineHeight: 1.55,
+                  color: 'text.secondary',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {JSON.stringify(message.structured_data, null, 2)}
+              </Box>
+            </Box>
+          )}
+        </Box>
       );
     }
 
@@ -451,28 +496,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </Box>
           </Box>
 
-          {/* Message Content */}
-          <Typography variant="body1" sx={{ color: isUser ? 'primary.contrastText' : 'text.primary', mb: 1 }}>
-            {message.content}
-          </Typography>
+          {/* Message Content — agents reply in light markdown */}
+          <Box sx={{ mb: 1 }}>
+            <RichText
+              text={message.content}
+              color={isUser ? 'primary.contrastText' : 'text.primary'}
+            />
+          </Box>
 
-          {/* Confidence Bar */}
-          {message.confidence && (
-            <Box sx={{ mb: 1 }}>
-              <LinearProgress
-                variant="determinate"
-                value={message.confidence * 100}
-                sx={{
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: isUser ? 'rgba(255,255,255,0.3)' : '#e0e0e0',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: getConfidenceColor(message.confidence),
-                  },
-                }}
-              />
-            </Box>
-          )}
+          {/* The confidence chip in the header already carries this number.
+              A second full-width progress bar read as a loading indicator. */}
 
           {/* Reasoning Chain - shown BEFORE structured data */}
           {(message.reasoning_chain || message.reasoning_steps) && (
