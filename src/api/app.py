@@ -36,6 +36,7 @@ from src.api.routers.document import router as document_router
 from src.api.routers.inventory import router as inventory_router
 from src.api.routers.advanced_forecasting import router as forecasting_router
 from src.api.routers.training import router as training_router
+from src.api.routers.data_import import router as data_import_router
 from src.api.services.monitoring.metrics import (
     record_request_metrics,
     get_metrics_response,
@@ -264,6 +265,7 @@ app.include_router(document_router)
 app.include_router(inventory_router)
 app.include_router(forecasting_router)
 app.include_router(training_router)
+app.include_router(data_import_router)
 
 
 @app.get("/")

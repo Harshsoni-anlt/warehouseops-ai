@@ -621,6 +621,7 @@ const EquipmentNew: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 select
                 SelectProps={{ native: true }}
+                InputLabelProps={{ shrink: true }}
               >
                 <option value="">Select Type</option>
                 <option value="forklift">Forklift</option>
@@ -656,6 +657,7 @@ const EquipmentNew: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 select
                 SelectProps={{ native: true }}
+                InputLabelProps={{ shrink: true }}
               >
                 <option value="">Select Status</option>
                 <option value="available">Available</option>

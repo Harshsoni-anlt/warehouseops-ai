@@ -82,6 +82,31 @@ Prefer fully offline? Set `LLM_PROVIDER=ollama` in `.env` and
 
 Full details and troubleshooting: **[LOCAL_TEST.md](LOCAL_TEST.md)**.
 
+## Use your own warehouse data
+
+The demo ships with realistic sample data so nothing is empty — but you can load
+your own in a couple of minutes. No database work required.
+
+```bash
+# See what you can import and the exact columns expected
+curl localhost:8000/api/v1/data/templates
+
+# Download a ready-to-fill CSV template
+curl -O localhost:8000/api/v1/data/template/inventory
+
+# Upload your filled CSV (add ?replace=true to wipe the sample data first)
+curl -F "file=@my_inventory.csv" localhost:8000/api/v1/data/import/inventory
+```
+
+| Dataset | Required columns | What it powers |
+|---|---|---|
+| `inventory` | `sku`, `name`, `quantity` (+ `location`, `reorder_point`) | Stock questions, reorder alerts |
+| `movements` | `sku`, `movement_type`, `quantity`, `timestamp` | **Demand forecasting** — aim for 90+ days of `outbound` rows |
+| `equipment` | `asset_id`, `type` (+ `model`, `zone`, `status`, `owner_user`) | Asset status, telemetry, maintenance |
+
+Export those columns from your WMS or a spreadsheet, upload, and the agents
+answer questions about your operation instead of the sample one.
+
 ## Features
 
 - **Natural-language operations** — inventory levels, stock locations, reorder alerts, equipment status, safety incidents, demand forecasts.
