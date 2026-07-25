@@ -1,0 +1,5 @@
+sku,name,quantity,location,reorder_point
+ACME-1001,Acme Steel Bolts M8 (box 500),4200,Rack B-12,800
+ACME-1002,Acme Hex Nuts M8 (box 500),3150,Rack B-13,600
+ACME-2001,Acme Safety Gloves L,940,Rack C-04,250
+ACME-2002,Acme Hi-Vis Vest XL,610,Rack C-05,150

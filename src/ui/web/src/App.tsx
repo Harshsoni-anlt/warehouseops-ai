@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Overview from './pages/Overview';
+import ImportData from './pages/ImportData';
 import Dashboard from './pages/Dashboard';
 import ChatInterfaceNew from './pages/ChatInterfaceNew';
 import Equipment from './pages/EquipmentNew';
@@ -36,6 +37,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Overview />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/import" element={<ImportData />} />
                     <Route path="/chat" element={<ChatInterfaceNew />} />
                     <Route path="/equipment" element={<Equipment />} />
                     <Route path="/forecasting" element={<Forecasting />} />

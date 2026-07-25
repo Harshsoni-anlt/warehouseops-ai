@@ -9,7 +9,7 @@ import {
   ExploreOutlined, SpaceDashboardOutlined, ForumOutlined,
   PrecisionManufacturingOutlined, InsightsOutlined, AssignmentTurnedInOutlined,
   HealthAndSafetyOutlined, DescriptionOutlined, BarChartOutlined,
-  MenuBookOutlined, HubOutlined, LogoutOutlined, CircleOutlined,
+  MenuBookOutlined, HubOutlined, LogoutOutlined, CircleOutlined, CloudUploadOutlined,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,6 +42,7 @@ const navGroups: { label: string; items: { text: string; icon: React.ReactNode; 
       { text: 'Forecasting', icon: <InsightsOutlined fontSize="small" />, path: '/forecasting' },
       { text: 'Documents', icon: <DescriptionOutlined fontSize="small" />, path: '/documents' },
       { text: 'Analytics', icon: <BarChartOutlined fontSize="small" />, path: '/analytics' },
+      { text: 'Import Data', icon: <CloudUploadOutlined fontSize="small" />, path: '/import' },
     ],
   },
   {
