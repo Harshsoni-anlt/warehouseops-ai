@@ -15,7 +15,7 @@
 
 """
 Document Extraction Agent - Main Orchestrator
-Implements the complete 6-stage NeMo pipeline for warehouse document processing.
+Implements the document processing pipeline for warehouse document processing.
 """
 
 import asyncio
@@ -39,10 +39,10 @@ from src.api.agents.document.models.document_models import (
 )
 
 # Import all pipeline stages
-from .preprocessing.nemo_retriever import NeMoRetrieverPreprocessor
+from .preprocessing.document_preprocessor import DocumentPreprocessor
 from .preprocessing.layout_detection import LayoutDetectionService
-from .ocr.nemo_ocr import NeMoOCRService
-from .ocr.nemotron_parse import NemotronParseService
+from .ocr.ocr_service import OCRService
+from .ocr.layout_parse import GroqParseService
 from .processing.small_llm_processor import SmallLLMProcessor
 from .processing.entity_extractor import EntityExtractor
 from .processing.embedding_indexing import EmbeddingIndexingService
@@ -71,14 +71,14 @@ class DocumentProcessingResult:
 
 class DocumentExtractionAgent:
     """
-    Main Document Extraction Agent implementing the complete NeMo pipeline.
+    Main Document Extraction Agent implementing the complete extraction pipeline.
 
     Pipeline Stages:
-    1. Document Preprocessing (NeMo Retriever)
-    2. Intelligent OCR (NeMoRetriever-OCR-v1 + Nemotron Parse)
-    3. Small LLM Processing (Llama Nemotron Nano VL 8B)
-    4. Embedding & Indexing (llama-nemotron-embed-vl-1b-v2)
-    5. Large LLM Judge (Llama 3.3 Nemotron Super 49B)
+    1. Document Preprocessing (document preprocessor)
+    2. Intelligent OCR (pdfplumber text extraction + Groq Parse)
+    3. Small LLM Processing (Groq LLM)
+    4. Embedding & Indexing (sentence-transformers/all-MiniLM-L6-v2)
+    5. Large LLM Judge (Groq Llama 3.3 70B)
     6. Intelligent Routing (Quality-based routing)
     """
 
@@ -86,10 +86,10 @@ class DocumentExtractionAgent:
         self.nim_client = None
 
         # Initialize all pipeline stages
-        self.preprocessor = NeMoRetrieverPreprocessor()
+        self.preprocessor = DocumentPreprocessor()
         self.layout_detector = LayoutDetectionService()
-        self.nemo_ocr = NeMoOCRService()
-        self.nemotron_parse = NemotronParseService()
+        self.ocr_service = OCRService()
+        self.layout_parse = GroqParseService()
         self.small_llm = SmallLLMProcessor()
         self.entity_extractor = EntityExtractor()
         self.embedding_service = EmbeddingIndexingService()
@@ -112,8 +112,8 @@ class DocumentExtractionAgent:
             # Initialize all pipeline stages
             await self.preprocessor.initialize()
             await self.layout_detector.initialize()
-            await self.nemo_ocr.initialize()
-            await self.nemotron_parse.initialize()
+            await self.ocr_service.initialize()
+            await self.layout_parse.initialize()
             await self.small_llm.initialize()
             await self.entity_extractor.initialize()
             await self.embedding_service.initialize()
@@ -136,7 +136,7 @@ class DocumentExtractionAgent:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> DocumentProcessingResult:
         """
-        Process a document through the complete 6-stage NeMo pipeline.
+        Process a document through the document processing pipeline.
 
         Args:
             file_path: Path to the document file
@@ -184,14 +184,14 @@ class DocumentExtractionAgent:
             # STAGE 2: Intelligent OCR Extraction
             logger.info(f"Stage 2: OCR extraction for {document_id}")
 
-            # Primary OCR with NeMoRetriever-OCR-v1
-            ocr_result = await self.nemo_ocr.extract_text(
+            # Primary OCR with pdfplumber text extraction
+            ocr_result = await self.ocr_service.extract_text(
                 preprocessing_result["images"], layout_result
             )
 
-            # Advanced OCR with Nemotron Parse for complex documents
+            # Advanced OCR with Groq Parse for complex documents
             if ocr_result["confidence"] < 0.8:  # Low confidence, try advanced OCR
-                advanced_ocr = await self.nemotron_parse.parse_document(
+                advanced_ocr = await self.layout_parse.parse_document(
                     preprocessing_result["images"], layout_result
                 )
                 # Merge results, preferring higher confidence
@@ -204,7 +204,7 @@ class DocumentExtractionAgent:
             # STAGE 3: Small LLM Processing
             logger.info(f"Stage 3: Small LLM processing for {document_id}")
 
-            # Process with Llama Nemotron Nano VL 8B
+            # Process with Groq LLM
             llm_result = await self.small_llm.process_document(
                 preprocessing_result["images"], ocr_result["text"], document_type
             )
@@ -234,7 +234,7 @@ class DocumentExtractionAgent:
             # STAGE 5: Large LLM Judge & Validator
             logger.info(f"Stage 5: Large LLM judging for {document_id}")
 
-            # Judge with Llama 3.3 Nemotron Super 49B
+            # Judge with Groq Llama 3.3 70B
             judge_result = await self.large_llm_judge.evaluate_document(
                 llm_result["structured_data"], entities, document_type
             )

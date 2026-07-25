@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Stage 5: Large LLM Judge & Validator with Llama 3.3 Nemotron Super 49B
+Stage 5: Large LLM Judge & Validator with Groq Llama 3.3 70B
 Comprehensive evaluation framework for document quality and accuracy.
 """
 
@@ -47,7 +47,7 @@ class JudgeEvaluation:
 
 class LargeLLMJudge:
     """
-    Stage 5: Large LLM Judge using Llama 3.3 Nemotron Super 49B NIM.
+    Stage 5: Large LLM Judge using Groq Llama 3.3 70B NIM.
 
     Evaluation Framework:
     1. Completeness Check (Score: 1-5)
@@ -211,7 +211,7 @@ class LargeLLMJudge:
         return prompt
 
     async def _call_judge_api(self, prompt: str) -> Dict[str, Any]:
-        """Call Llama 3.3 Nemotron Super 49B API for evaluation."""
+        """Call Groq Llama 3.3 70B API for evaluation."""
         try:
             messages = [{"role": "user", "content": prompt}]
             

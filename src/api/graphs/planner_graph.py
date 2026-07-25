@@ -264,97 +264,14 @@ class IntentClassifier:
 
     @classmethod
     def classify_intent(cls, message: str) -> str:
-        """Enhanced intent classification with better logic and ambiguity handling."""
-        message_lower = message.lower()
+        """Classify a user message into a planner-graph route.
 
-        # Check for document-related keywords first (highest priority)
-        if any(keyword in message_lower for keyword in cls.DOCUMENT_KEYWORDS):
-            return "document"
+        See ``src/api/graphs/intent_rules.py`` — whole-word matching, scored,
+        rather than the substring chain this used to be.
+        """
+        from src.api.graphs.intent_rules import classify as _classify
 
-        # Check for specific safety-related queries (not general equipment)
-        safety_score = sum(
-            1 for keyword in cls.SAFETY_KEYWORDS if keyword in message_lower
-        )
-        if safety_score > 0:
-            # Only route to safety if it's clearly safety-related, not general equipment
-            safety_context_indicators = [
-                "procedure",
-                "policy",
-                "incident",
-                "compliance",
-                "safety",
-                "ppe",
-                "hazard",
-            ]
-            if any(
-                indicator in message_lower for indicator in safety_context_indicators
-            ):
-                return "safety"
-
-        # Check for equipment-specific queries (availability, status, assignment)
-        equipment_indicators = [
-            "available",
-            "status",
-            "assign",
-            "dispatch",
-            "utilization",
-            "maintenance",
-            "telemetry",
-        ]
-        equipment_objects = [
-            "forklift",
-            "scanner",
-            "conveyor",
-            "truck",
-            "amr",
-            "agv",
-            "equipment",
-        ]
-
-        if any(
-            indicator in message_lower for indicator in equipment_indicators
-        ) and any(obj in message_lower for obj in equipment_objects):
-            return "equipment"
-
-        # Check for operations-related keywords (workflow, tasks, management)
-        operations_score = sum(
-            1 for keyword in cls.OPERATIONS_KEYWORDS if keyword in message_lower
-        )
-        if operations_score > 0:
-            # Prioritize operations for workflow-related terms
-            workflow_terms = [
-                "task",
-                "wave",
-                "order",
-                "create",
-                "pick",
-                "pack",
-                "management",
-                "workflow",
-            ]
-            if any(term in message_lower for term in workflow_terms):
-                return "operations"
-
-        # Check for equipment-related keywords (fallback)
-        equipment_score = sum(
-            1 for keyword in cls.EQUIPMENT_KEYWORDS if keyword in message_lower
-        )
-        if equipment_score > 0:
-            return "equipment"
-
-        # Handle ambiguous queries
-        ambiguous_patterns = [
-            "inventory",
-            "management",
-            "help",
-            "assistance",
-            "support",
-        ]
-        if any(pattern in message_lower for pattern in ambiguous_patterns):
-            return "ambiguous"
-
-        # Default to equipment for general queries
-        return "equipment"
+        return _classify(message)
 
 
 def handle_ambiguous_query(state: WarehouseState) -> WarehouseState:

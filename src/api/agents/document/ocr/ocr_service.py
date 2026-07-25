@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Stage 2: Intelligent OCR with NeMoRetriever-OCR-v1
+Stage 2: Text extraction with pdfplumber
 Fast, accurate text extraction from images with layout-aware OCR.
 """
 
@@ -31,9 +31,9 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-class NeMoOCRService:
+class OCRService:
     """
-    Stage 2: Intelligent OCR using NeMoRetriever-OCR-v1.
+    Stage 2: Intelligent OCR using pdfplumber text extraction.
 
     Features:
     - Fast, accurate text extraction from images
@@ -44,11 +44,11 @@ class NeMoOCRService:
 
     def __init__(self):
         self.api_key = os.getenv("NEMO_OCR_API_KEY", "")
-        self.base_url = os.getenv("NEMO_OCR_URL", "https://integrate.api.nvidia.com/v1")
+        self.base_url = os.getenv("NEMO_OCR_URL", "https://api.groq.com/openai/v1")
         self.timeout = 60
 
     async def initialize(self):
-        """Initialize the NeMo OCR service."""
+        """Initialize the OCR service."""
         try:
             if not self.api_key:
                 logger.warning("NEMO_OCR_API_KEY not found, using mock implementation")
@@ -62,17 +62,17 @@ class NeMoOCRService:
                 )
                 response.raise_for_status()
 
-            logger.info("NeMo OCR Service initialized successfully")
+            logger.info("OCR Service initialized successfully")
 
         except Exception as e:
-            logger.error(f"Failed to initialize NeMo OCR Service: {e}")
+            logger.error(f"Failed to initialize OCR Service: {e}")
             logger.warning("Falling back to mock implementation")
 
     async def extract_text(
         self, images: List[Image.Image], layout_result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Extract text from images using NeMoRetriever-OCR-v1.
+        Extract text from images using pdfplumber text extraction.
 
         Args:
             images: List of PIL Images to process
@@ -82,7 +82,7 @@ class NeMoOCRService:
             OCR results with text, bounding boxes, and confidence scores
         """
         try:
-            logger.info(f"Extracting text from {len(images)} images using NeMo OCR")
+            logger.info(f"Extracting text from {len(images)} images using OCR")
 
             all_ocr_results = []
             total_text = ""
@@ -112,7 +112,7 @@ class NeMoOCRService:
                 "page_results": enhanced_results,
                 "confidence": overall_confidence,
                 "total_pages": len(images),
-                "model_used": "NeMoRetriever-OCR-v1",
+                "model_used": "pdfplumber text extraction",
                 "processing_timestamp": datetime.now().isoformat(),
                 "layout_enhanced": True,
             }
@@ -133,7 +133,7 @@ class NeMoOCRService:
             # Convert image to base64
             image_base64 = await self._image_to_base64(image)
 
-            # Call NeMo OCR API
+            # Call OCR API
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
@@ -246,7 +246,7 @@ class NeMoOCRService:
     def _parse_ocr_result(
         self, api_result: Dict[str, Any], image_size: tuple
     ) -> Dict[str, Any]:
-        """Parse NeMo OCR API result."""
+        """Parse OCR API result."""
         try:
             # Handle new API response format
             if "text" in api_result:

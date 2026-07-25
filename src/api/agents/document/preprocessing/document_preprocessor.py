@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Stage 1: Document Preprocessing with NeMo Retriever Extraction
+Stage 1: Document Preprocessing with document preprocessor Extraction
 Handles PDF decomposition, image extraction, and page layout detection.
 """
 
@@ -95,9 +95,9 @@ def _check_poppler_available() -> tuple[bool, str]:
     return False, diagnostic
 
 
-class NeMoRetrieverPreprocessor:
+class DocumentPreprocessor:
     """
-    Stage 1: Document Preprocessing using NeMo Retriever Extraction.
+    Stage 1: Document Preprocessing using document preprocessor Extraction.
 
     Responsibilities:
     - PDF decomposition & image extraction
@@ -109,12 +109,12 @@ class NeMoRetrieverPreprocessor:
     def __init__(self):
         self.api_key = os.getenv("NEMO_RETRIEVER_API_KEY", "")
         self.base_url = os.getenv(
-            "NEMO_RETRIEVER_URL", "https://integrate.api.nvidia.com/v1"
+            "NEMO_RETRIEVER_URL", "https://api.groq.com/openai/v1"
         )
         self.timeout = 60
 
     async def initialize(self):
-        """Initialize the NeMo Retriever preprocessor."""
+        """Initialize the document preprocessor preprocessor."""
         try:
             if not self.api_key:
                 logger.warning(
@@ -130,15 +130,15 @@ class NeMoRetrieverPreprocessor:
                 )
                 response.raise_for_status()
 
-            logger.info("NeMo Retriever Preprocessor initialized successfully")
+            logger.info("document preprocessor Preprocessor initialized successfully")
 
         except Exception as e:
-            logger.error(f"Failed to initialize NeMo Retriever Preprocessor: {e}")
+            logger.error(f"Failed to initialize document preprocessor Preprocessor: {e}")
             logger.warning("Falling back to mock implementation")
 
     async def process_document(self, file_path: str) -> Dict[str, Any]:
         """
-        Process a document through NeMo Retriever extraction.
+        Process a document through document preprocessor extraction.
 
         Args:
             file_path: Path to the document file
@@ -167,14 +167,14 @@ class NeMoRetrieverPreprocessor:
             raise
 
     async def _process_pdf(self, file_path: str) -> Dict[str, Any]:
-        """Process PDF document using NeMo Retriever."""
+        """Process PDF document using document preprocessor."""
         try:
             logger.info(f"Extracting images from PDF: {file_path}")
             # Extract images from PDF
             images = await self._extract_pdf_images(file_path)
             logger.info(f"Extracted {len(images)} pages from PDF")
 
-            # Process each page with NeMo Retriever
+            # Process each page with document preprocessor
             processed_pages = []
             
             # Limit to first 5 pages for faster processing (can be configured)
@@ -187,7 +187,7 @@ class NeMoRetrieverPreprocessor:
             for i, image in enumerate(pages_to_process):
                 logger.info(f"Processing PDF page {i + 1}/{len(pages_to_process)}")
 
-                # Use NeMo Retriever for page element detection (with fast fallback)
+                # Use document preprocessor for page element detection (with fast fallback)
                 page_elements = await self._detect_page_elements(image)
 
                 processed_pages.append(
@@ -321,11 +321,11 @@ class NeMoRetrieverPreprocessor:
 
     async def _detect_page_elements(self, image: Image.Image) -> Dict[str, Any]:
         """
-        Detect page elements using NeMo Retriever models.
+        Detect page elements using document preprocessor models.
 
         Uses:
         - nv-yolox-page-elements-v1 for element detection
-        - nemotron-page-elements-v1 for semantic regions
+        - layout heuristics for semantic regions
         """
         # Immediately use mock if no API key - don't wait for timeout
         if not self.api_key:
@@ -341,7 +341,7 @@ class NeMoRetrieverPreprocessor:
             image.save(buffer, format="PNG")
             image_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-            # Call NeMo Retriever API for element detection with shorter timeout
+            # Call document preprocessor API for element detection with shorter timeout
             # Use a shorter timeout to fail fast and fall back to mock
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
@@ -351,7 +351,7 @@ class NeMoRetrieverPreprocessor:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "nvidia/llama-3.3-nemotron-super-49b-v1.5",  # Fallback model for page element detection
+                        "model": "llama-3.3-70b-versatile",  # Fallback model for page element detection
                         "messages": [
                             {
                                 "role": "user",
@@ -399,7 +399,7 @@ class NeMoRetrieverPreprocessor:
     def _parse_element_detection(
         self, api_result: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """Parse NeMo Retriever element detection results."""
+        """Parse document preprocessor element detection results."""
         elements = []
 
         try:

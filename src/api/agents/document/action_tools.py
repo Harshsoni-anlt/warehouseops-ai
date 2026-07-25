@@ -45,9 +45,9 @@ class DocumentActionTools:
     """Document processing action tools for MCP framework."""
     
     # Model name constants
-    MODEL_SMALL_LLM = "Llama Nemotron Nano VL 8B"
-    MODEL_LARGE_JUDGE = "Llama 3.3 Nemotron Super 49B"
-    MODEL_OCR = "NeMoRetriever-OCR-v1"
+    MODEL_SMALL_LLM = "Groq LLM"
+    MODEL_LARGE_JUDGE = "Groq Llama 3.3 70B"
+    MODEL_OCR = "pdfplumber"
 
     def __init__(self):
         self.nim_client = None
@@ -562,11 +562,11 @@ class DocumentActionTools:
                 "message": "Document uploaded and processing started",
                 "estimated_processing_time": "30-60 seconds",
                 "processing_stages": [
-                    "Preprocessing (NeMo Retriever)",
-                    "OCR Extraction (NeMoRetriever-OCR-v1)",
-                    "Small LLM Processing (Llama Nemotron Nano VL 8B)",
-                    "Embedding & Indexing (llama-nemotron-embed-vl-1b-v2)",
-                    "Large LLM Judge (Llama 3.3 Nemotron Super 49B)",
+                    "Preprocessing (text extraction)",
+                    "Text extraction (pdfplumber)",
+                    "Small LLM Processing (Groq LLM)",
+                    "Embedding & Indexing (sentence-transformers/all-MiniLM-L6-v2)",
+                    "Large LLM Judge (Groq Llama 3.3 70B)",
                     "Intelligent Routing",
                 ],
             }
@@ -1123,7 +1123,7 @@ class DocumentActionTools:
         validation_result: Dict[str, Any],
         routing_result: Dict[str, Any],
     ) -> None:
-        """Store actual processing results from NeMo pipeline."""
+        """Store actual processing results from pipeline."""
         try:
             logger.info(f"Storing processing results for document: {_sanitize_log_data(document_id)}")
 
@@ -1146,7 +1146,7 @@ class DocumentActionTools:
                         processed_data=serialized_preprocessing,
                         confidence_score=preprocessing_result.get("confidence", 0.8),
                         processing_time_ms=preprocessing_result.get("processing_time_ms", 0),
-                        model_used="NeMo Retriever",
+                        model_used="text extraction",
                     )
                     
                     await self.db_service.save_extraction_result(
@@ -1156,7 +1156,7 @@ class DocumentActionTools:
                         processed_data=serialized_ocr,
                         confidence_score=ocr_result.get("confidence", 0.8),
                         processing_time_ms=ocr_result.get("processing_time_ms", 0),
-                        model_used=ocr_result.get("model_used", "NeMoRetriever-OCR-v1"),
+                        model_used=ocr_result.get("model_used", "pdfplumber"),
                     )
                     
                     await self.db_service.save_extraction_result(
@@ -1166,7 +1166,7 @@ class DocumentActionTools:
                         processed_data=serialized_llm,
                         confidence_score=llm_result.get("confidence", 0.8),
                         processing_time_ms=llm_result.get("processing_time_ms", 0),
-                        model_used=llm_result.get("model_used", "Llama Nemotron Nano VL 8B"),
+                        model_used=llm_result.get("model_used", "Groq LLM"),
                     )
                     
                     # Save validation stage extraction result
@@ -1551,7 +1551,7 @@ class DocumentActionTools:
                                 },
                                 confidence_score=quality_score.confidence if quality_score else 0.0,
                                 processing_time_ms=0,  # Validation doesn't track processing time yet
-                                model_used=self.MODEL_LARGE_JUDGE,  # Llama 3.3 Nemotron Super 49B
+                                model_used=self.MODEL_LARGE_JUDGE,  # Groq Llama 3.3 70B
                                 metadata={
                                     "judge_model": self.MODEL_LARGE_JUDGE,
                                     "timestamp": datetime.now().isoformat(),
@@ -1615,7 +1615,7 @@ class DocumentActionTools:
                         "routing_decision": routing_decision,
                     }
 
-            # No processing results found - check if NeMo pipeline is still running
+            # No processing results found - check if pipeline is still running
             exists, doc_status = self._check_document_exists(document_id)
             if exists:
                 current_status = doc_status.get("status", "")
@@ -1631,11 +1631,11 @@ class DocumentActionTools:
                     ProcessingStage.ROUTING
                 ]
                 if current_status in processing_stages:
-                    logger.info(f"Document {_sanitize_log_data(document_id)} is still being processed by NeMo pipeline. Status: {_sanitize_log_data(str(current_status))}")
+                    logger.info(f"Document {_sanitize_log_data(document_id)} is still being processed by pipeline. Status: {_sanitize_log_data(str(current_status))}")
                     # Return a message indicating processing is in progress
                     return self._create_empty_extraction_response(
                         "processing_in_progress",
-                        "Document is still being processed by NeMo pipeline. Please check again in a moment."
+                        "Document is still being processed by pipeline. Please check again in a moment."
                     )
                 elif current_status == ProcessingStage.COMPLETED:
                     # Status says COMPLETED but no processing_results - this shouldn't happen
@@ -1654,11 +1654,11 @@ class DocumentActionTools:
                         f"Document processing failed: {error_msg}"
                     )
                 else:
-                    logger.warning(f"Document {_sanitize_log_data(document_id)} has no processing results and status is {_sanitize_log_data(str(current_status))}. NeMo pipeline may have failed.")
-                    # Return mock data with clear indication that NeMo pipeline didn't complete
+                    logger.warning(f"Document {_sanitize_log_data(document_id)} has no processing results and status is {_sanitize_log_data(str(current_status))}. pipeline may have failed.")
+                    # Return mock data with clear indication that pipeline didn't complete
                     return self._create_mock_data_response(
                         "nemo_pipeline_incomplete",
-                        "NeMo pipeline did not complete processing. Please check server logs for errors."
+                        "pipeline did not complete processing. Please check server logs for errors."
                     )
             else:
                 logger.error(f"Document {_sanitize_log_data(document_id)} not found in status tracking")

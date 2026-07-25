@@ -81,6 +81,8 @@ interface StreamingEvent {
   audit_id?: string;
   text?: string;
   options?: string[];
+  matched_terms?: string[];
+  tools?: string[];
 }
 
 const ChatInterfaceNew: React.FC = () => {
@@ -279,12 +281,25 @@ const ChatInterfaceNew: React.FC = () => {
 
     setMessages(prev => [...prev, assistantMessage]);
 
-    // Simulate streaming events for UI enhancement (optional)
+    // Trace events. These are reported by the backend — nothing here is
+    // fabricated, because a demo that invents its own telemetry is worse
+    // than one that shows none.
     const events: StreamingEvent[] = [
-      { stage: 'route_decision', agent: response.route || 'operations', confidence: response.confidence || 0.87 },
-      { stage: 'retrieval_debug', k: 12, reranked: 6, evidence_score: 0.82 },
-      { stage: 'sql_trace', query: 'SELECT * FROM orders WHERE id IN (1001,1002)', lat_ms: 38 },
+      {
+        stage: 'route_decision',
+        agent: response.route || 'general',
+        confidence: response.routing_confidence ?? response.confidence,
+        matched_terms: response.routing_trace?.matched_terms?.[response.route] ?? undefined,
+      },
     ];
+
+    if (Array.isArray(response.mcp_tools_used) && response.mcp_tools_used.length > 0) {
+      events.push({ stage: 'tools_used', tools: response.mcp_tools_used });
+    }
+
+    if (Array.isArray(response.evidence) && response.evidence.length > 0) {
+      events.push({ stage: 'retrieval_debug', k: response.evidence.length });
+    }
 
     if (response.proposals && response.proposals.length > 0) {
       response.proposals.forEach((proposal: any) => {
@@ -543,28 +558,83 @@ const ChatInterfaceNew: React.FC = () => {
               />
             ))}
 
-            {/* Streaming Events */}
+            {/* Agent trace — what the router decided and why. Everything here
+                comes from the API response; nothing is simulated. */}
             {streamingEvents.length > 0 && (
               <Box sx={{ px: 2, mb: 2 }}>
-                <Paper sx={{ backgroundColor: 'background.paper', p: 2, border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
-                  <Typography variant="body2" sx={{ color: 'primary.main', mb: 1, fontWeight: 500 }}>
-                    Processing...
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 1.75,
+                    borderRadius: 2,
+                    backgroundColor: 'background.paper',
+                  }}
+                >
+                  <Typography
+                    variant="overline"
+                    sx={{ color: 'text.secondary', letterSpacing: '0.08em', display: 'block', mb: 1 }}
+                  >
+                    Agent trace
                   </Typography>
+
                   {streamingEvents
-                    .filter((event): event is StreamingEvent => event !== null && event !== undefined)
+                    .filter((e): e is StreamingEvent => !!e)
                     .map((event, index) => (
-                      <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', minWidth: '100px' }}>
-                          {event?.stage || 'unknown'}:
+                      <Box
+                        key={index}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          gap: 1.5,
+                          py: 0.5,
+                          borderTop: index === 0 ? 'none' : '1px solid',
+                          borderColor: 'divider',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            minWidth: 108,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                          }}
+                        >
+                          {event.stage}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.primary' }}>
-                          {event?.agent && `Agent: ${event.agent}`}
-                          {event?.confidence && ` (${(event.confidence * 100).toFixed(1)}%)`}
-                          {event?.k !== undefined && ` K=${event.k}→${event.reranked}`}
-                          {event?.lat_ms !== undefined && ` (${event.lat_ms}ms)`}
-                          {event?.action && ` ${event.action}`}
-                          {event?.text && ` ${event.text}`}
-                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                          {event.agent && (
+                            <Chip
+                              size="small"
+                              label={event.agent}
+                              sx={{ height: 20, fontSize: 11, fontWeight: 600 }}
+                            />
+                          )}
+                          {typeof event.confidence === 'number' && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                              {(event.confidence * 100).toFixed(0)}% confidence
+                            </Typography>
+                          )}
+                          {event.matched_terms && event.matched_terms.length > 0 && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                              matched: {event.matched_terms.slice(0, 4).join(', ')}
+                            </Typography>
+                          )}
+                          {event.tools && event.tools.length > 0 && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                              {event.tools.join(', ')}
+                            </Typography>
+                          )}
+                          {event.k !== undefined && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                              {event.k} evidence item{event.k === 1 ? '' : 's'}
+                            </Typography>
+                          )}
+                          {event.action && (
+                            <Typography variant="caption" sx={{ color: 'text.primary' }}>{event.action}</Typography>
+                          )}
+                        </Box>
                       </Box>
                     ))}
                 </Paper>

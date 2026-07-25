@@ -15,7 +15,7 @@
 
 """
 Layout Detection Service
-Handles page layout detection and element classification using NeMo models.
+Handles page layout detection and element classification using models.
 """
 
 import asyncio
@@ -31,17 +31,17 @@ logger = logging.getLogger(__name__)
 
 class LayoutDetectionService:
     """
-    Layout Detection Service using NeMo models.
+    Layout Detection Service using models.
 
     Uses:
     - nv-yolox-page-elements-v1 for element detection
-    - nemotron-page-elements-v1 for semantic regions
+    - layout heuristics for semantic regions
     """
 
     def __init__(self):
         self.api_key = os.getenv("NEMO_RETRIEVER_API_KEY", "")
         self.base_url = os.getenv(
-            "NEMO_RETRIEVER_URL", "https://integrate.api.nvidia.com/v1"
+            "NEMO_RETRIEVER_URL", "https://api.groq.com/openai/v1"
         )
         self.timeout = 60
 
@@ -67,7 +67,7 @@ class LayoutDetectionService:
         Detect page layout and classify elements.
 
         Args:
-            preprocessing_result: Result from NeMo Retriever preprocessing
+            preprocessing_result: Result from document preprocessor preprocessing
 
         Returns:
             Layout detection results with element classifications

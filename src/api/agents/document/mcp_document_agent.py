@@ -333,11 +333,11 @@ class MCPDocumentExtractionAgent:
                     "supported_formats": ["PDF", "PNG", "JPG", "JPEG", "TIFF", "BMP"],
                     "max_file_size": "50MB",
                     "processing_pipeline": [
-                        "Document Preprocessing (NeMo Retriever)",
-                        "Intelligent OCR (NeMoRetriever-OCR-v1)",
-                        "Small LLM Processing (Llama Nemotron Nano VL 8B)",
-                        "Embedding & Indexing (llama-nemotron-embed-vl-1b-v2)",
-                        "Large LLM Judge (Llama 3.3 Nemotron Super 49B)",
+                        "Document Preprocessing (document preprocessor)",
+                        "Intelligent OCR (pdfplumber text extraction)",
+                        "Small LLM Processing (Groq LLM)",
+                        "Embedding & Indexing (sentence-transformers/all-MiniLM-L6-v2)",
+                        "Large LLM Judge (Groq Llama 3.3 70B)",
                         "Intelligent Routing",
                     ],
                     "estimated_processing_time": "30-60 seconds",
@@ -601,7 +601,7 @@ class MCPDocumentExtractionAgent:
                 data={
                     "capabilities": [
                         "Document upload and processing",
-                        "Intelligent OCR with NeMo models",
+                        "Text extraction from PDFs",
                         "Entity extraction and validation",
                         "Quality scoring and routing",
                         "Document search and retrieval",
@@ -615,7 +615,7 @@ class MCPDocumentExtractionAgent:
                         "Packing Lists",
                         "Safety Reports",
                     ],
-                    "processing_pipeline": "6-stage NeMo pipeline with intelligent routing",
+                    "processing_pipeline": "text extraction, LLM field extraction, quality scoring and routing",
                 },
                 natural_language="I'm the Document Extraction Agent, specialized in processing warehouse documents using local models. I can upload, process, validate, and search documents with intelligent quality-based routing. How can I help you with document processing?",
                 recommendations=[

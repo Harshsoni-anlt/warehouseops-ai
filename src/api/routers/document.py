@@ -361,7 +361,7 @@ async def upload_document(
     tools: DocumentActionTools = Depends(get_document_tools),
 ):
     """
-    Upload a document for processing through the NeMo pipeline.
+    Upload a document for processing through the extraction pipeline.
 
     Args:
         file: Document file to upload (PDF, PNG, JPG, JPEG, TIFF, BMP)

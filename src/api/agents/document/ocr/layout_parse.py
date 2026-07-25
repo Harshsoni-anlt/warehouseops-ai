@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Advanced OCR with Nemotron Parse
+Advanced OCR with Groq Parse
 VLM-based OCR with semantic understanding for complex documents.
 """
 
@@ -31,9 +31,9 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-class NemotronParseService:
+class GroqParseService:
     """
-    Advanced OCR using NeMo Retriever Parse for complex documents.
+    Advanced OCR using layout parser for complex documents.
 
     Features:
     - VLM-based OCR with semantic understanding
@@ -46,12 +46,12 @@ class NemotronParseService:
     def __init__(self):
         self.api_key = os.getenv("NEMO_PARSE_API_KEY", "")
         self.base_url = os.getenv(
-            "NEMO_PARSE_URL", "https://integrate.api.nvidia.com/v1"
+            "NEMO_PARSE_URL", "https://api.groq.com/openai/v1"
         )
         self.timeout = 60
 
     async def initialize(self):
-        """Initialize the Nemotron Parse service."""
+        """Initialize the Groq Parse service."""
         try:
             if not self.api_key:
                 logger.warning(
@@ -67,17 +67,17 @@ class NemotronParseService:
                 )
                 response.raise_for_status()
 
-            logger.info("Nemotron Parse Service initialized successfully")
+            logger.info("Groq Parse Service initialized successfully")
 
         except Exception as e:
-            logger.error(f"Failed to initialize Nemotron Parse Service: {e}")
+            logger.error(f"Failed to initialize Groq Parse Service: {e}")
             logger.warning("Falling back to mock implementation")
 
     async def parse_document(
         self, images: List[Image.Image], layout_result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Parse document using Nemotron Parse for advanced OCR.
+        Parse document using Groq Parse for advanced OCR.
 
         Args:
             images: List of PIL Images to process
@@ -87,7 +87,7 @@ class NemotronParseService:
             Advanced OCR results with semantic understanding
         """
         try:
-            logger.info(f"Parsing {len(images)} images using Nemotron Parse")
+            logger.info(f"Parsing {len(images)} images using Groq Parse")
 
             all_parse_results = []
             total_text = ""
@@ -117,7 +117,7 @@ class NemotronParseService:
                 "page_results": semantic_results,
                 "confidence": overall_confidence,
                 "total_pages": len(images),
-                "model_used": "Nemotron-Parse",
+                "model_used": "Groq-Parse",
                 "processing_timestamp": datetime.now().isoformat(),
                 "semantic_enhanced": True,
                 "reading_order_preserved": True,
@@ -130,7 +130,7 @@ class NemotronParseService:
     async def _parse_image(
         self, image: Image.Image, page_number: int
     ) -> Dict[str, Any]:
-        """Parse a single image using Nemotron Parse."""
+        """Parse a single image using Groq Parse."""
         try:
             if not self.api_key:
                 # Mock implementation for development
@@ -139,10 +139,10 @@ class NemotronParseService:
             # Convert image to base64
             image_base64 = await self._image_to_base64(image)
 
-            # Call Nemotron Parse API
+            # Call Groq Parse API
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
-                    f"{self.base_url}/models/nemotron-parse/infer",
+                    f"{self.base_url}/models/layout-parse/infer",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
@@ -188,7 +188,7 @@ class NemotronParseService:
     def _parse_parse_result(
         self, api_result: Dict[str, Any], image_size: tuple
     ) -> Dict[str, Any]:
-        """Parse Nemotron Parse API result."""
+        """Parse Groq Parse API result."""
         try:
             outputs = api_result.get("outputs", [])
 
@@ -230,7 +230,7 @@ class NemotronParseService:
             }
 
         except Exception as e:
-            logger.error(f"Failed to parse Nemotron Parse result: {e}")
+            logger.error(f"Failed to parse Groq Parse result: {e}")
             return {"text": "", "elements": [], "reading_order": [], "confidence": 0.0}
 
     async def _add_semantic_understanding(

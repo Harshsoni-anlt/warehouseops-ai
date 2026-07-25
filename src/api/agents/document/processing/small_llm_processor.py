@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Stage 3: Small LLM Processing with Llama Nemotron Nano VL 8B
+Stage 3: Small LLM Processing with Groq LLM
 Vision + Language model for multimodal document understanding.
 """
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class SmallLLMProcessor:
     """
-    Stage 3: Small LLM Processing using Llama Nemotron Nano VL 8B.
+    Stage 3: Small LLM Processing using Groq LLM.
 
     Features:
     - Native vision understanding (processes doc images directly)
@@ -48,7 +48,7 @@ class SmallLLMProcessor:
     def __init__(self):
         self.api_key = os.getenv("LLAMA_NANO_VL_API_KEY", "")
         self.base_url = os.getenv(
-            "LLAMA_NANO_VL_URL", "https://integrate.api.nvidia.com/v1"
+            "LLAMA_NANO_VL_URL", "https://api.groq.com/openai/v1"
         )
         self.timeout = 60
         self.config: Optional[AgentConfig] = None  # Agent configuration
@@ -84,7 +84,7 @@ class SmallLLMProcessor:
         self, images: List[Image.Image], ocr_text: str, document_type: str
     ) -> Dict[str, Any]:
         """
-        Process document using Llama Nemotron Nano VL 8B.
+        Process document using Groq LLM.
 
         Args:
             images: List of PIL Images
@@ -95,7 +95,7 @@ class SmallLLMProcessor:
             Structured data extracted from the document
         """
         try:
-            logger.info(f"Processing document with Small LLM (Llama Nemotron Nano VL 8B)")
+            logger.info(f"Processing document with Small LLM (Groq LLM)")
 
             # Try multimodal processing first, fallback to text-only if it fails
             if not self.api_key:
@@ -128,7 +128,7 @@ class SmallLLMProcessor:
             return {
                 "structured_data": structured_data,
                 "confidence": result.get("confidence", 0.8),
-                "model_used": "Llama-Nemotron-Nano-VL-8B",
+                "model_used": "Llama-Groq-Nano-VL-8B",
                 "processing_timestamp": datetime.now().isoformat(),
                 "multimodal_processed": False,  # Always text-only for now
             }
@@ -215,7 +215,7 @@ class SmallLLMProcessor:
     async def _call_text_only_api(
         self, ocr_text: str, document_type: str
     ) -> Dict[str, Any]:
-        """Call Llama Nemotron Nano VL 8B API with text-only input."""
+        """Call Groq LLM API with text-only input."""
         try:
             # Create a text-only prompt for document processing
             prompt = f"""
@@ -283,7 +283,7 @@ class SmallLLMProcessor:
     async def _call_nano_vl_api(
         self, multimodal_input: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Call Llama Nemotron Nano VL 8B API."""
+        """Call Groq LLM API."""
         try:
             # Prepare API request
             messages = [
@@ -392,7 +392,7 @@ class SmallLLMProcessor:
                     },
                 ),
                 "processing_metadata": {
-                    "model_used": "Llama-Nemotron-Nano-VL-8B",
+                    "model_used": "Llama-Groq-Nano-VL-8B",
                     "timestamp": datetime.now().isoformat(),
                     "multimodal": result.get("multimodal_processed", False),
                 },
@@ -423,7 +423,7 @@ class SmallLLMProcessor:
                     "accuracy": 0.5,
                 },
                 "processing_metadata": {
-                    "model_used": "Llama-Nemotron-Nano-VL-8B",
+                    "model_used": "Llama-Groq-Nano-VL-8B",
                     "timestamp": datetime.now().isoformat(),
                     "multimodal": False,
                     "error": str(e),

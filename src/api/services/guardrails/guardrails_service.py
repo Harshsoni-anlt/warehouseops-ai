@@ -14,11 +14,11 @@
 # limitations under the License.
 
 """
-NeMo Guardrails Service for Warehouse Operations
+Guardrails Service for Warehouse Operations
 
-Provides integration with NeMo Guardrails for content safety,
+Provides integration with Guardrails for content safety,
 security, and compliance protection. Supports multiple implementation modes:
-1. NeMo Guardrails SDK (with Colang) - Phase 2 implementation
+1. Guardrails SDK (with Colang) - Phase 2 implementation
 2. Pattern-based matching - Fallback/legacy implementation
 
 Feature flag: USE_NEMO_GUARDRAILS_SDK (default: false)
@@ -39,27 +39,27 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Try to import NeMo Guardrails SDK service
+# Try to import Guardrails SDK service
 try:
     from .nemo_sdk_service import NeMoGuardrailsSDKService, NEMO_SDK_AVAILABLE
 except ImportError:
     NEMO_SDK_AVAILABLE = False
-    logger.warning("NeMo Guardrails SDK service not available")
+    logger.warning("Guardrails SDK service not available")
 
 
 @dataclass
 class GuardrailsConfig:
-    """Configuration for NeMo Guardrails."""
+    """Configuration for Guardrails."""
 
     rails_file: str = "data/config/guardrails/rails.yaml"
     api_key: str = os.getenv("RAIL_API_KEY") or os.getenv("GROQ_API_KEY") or os.getenv("NVIDIA_API_KEY", "")
     base_url: str = os.getenv(
-        "RAIL_API_URL", "https://integrate.api.nvidia.com/v1"
+        "RAIL_API_URL", "https://api.groq.com/openai/v1"
     )
     timeout: int = int(os.getenv("GUARDRAILS_TIMEOUT", "10").split('#')[0].strip())
     use_api: bool = os.getenv("GUARDRAILS_USE_API", "false").lower() == "true"  # Disabled by default - API endpoint not available
     use_sdk: bool = os.getenv("USE_NEMO_GUARDRAILS_SDK", "false").lower() == "true"
-    model_name: str = os.getenv("GUARDRAILS_MODEL", "nvidia/llama-3.3-nemotron-super-49b-v1.5")
+    model_name: str = os.getenv("GUARDRAILS_MODEL", "llama-3.3-70b-versatile")
     temperature: float = 0.1
     max_tokens: int = 1000
     top_p: float = 0.9
@@ -79,10 +79,10 @@ class GuardrailsResult:
 
 class GuardrailsService:
     """
-    Service for NeMo Guardrails integration with multiple implementation modes.
+    Service for Guardrails integration with multiple implementation modes.
     
     Supports:
-    - NeMo Guardrails SDK (with Colang) - Phase 2 implementation
+    - Guardrails SDK (with Colang) - Phase 2 implementation
     - Pattern-based matching - Fallback/legacy implementation
     
     Implementation is selected via USE_NEMO_GUARDRAILS_SDK environment variable.
@@ -100,7 +100,7 @@ class GuardrailsService:
             try:
                 self.sdk_service = NeMoGuardrailsSDKService()
                 self.use_sdk = True
-                logger.info("Using NeMo Guardrails SDK implementation (Phase 2)")
+                logger.info("Using Guardrails SDK implementation (Phase 2)")
             except Exception as e:
                 logger.warning(f"Failed to initialize SDK service, falling back to pattern matching: {e}")
                 self.use_sdk = False
@@ -144,7 +144,7 @@ class GuardrailsService:
             self.rails_config = None
 
     def _initialize_api_client(self):
-        """Initialize the NeMo Guardrails API client."""
+        """Initialize the Guardrails API client."""
         if not self.config.use_api:
             logger.info("Guardrails API disabled via configuration")
             return
@@ -166,7 +166,7 @@ class GuardrailsService:
             )
             self.api_available = True
             logger.info(
-                f"NeMo Guardrails API client initialized: base_url={self.config.base_url}"
+                f"Guardrails API client initialized: base_url={self.config.base_url}"
             )
         except Exception as e:
             logger.error(f"Failed to initialize Guardrails API client: {e}")
@@ -176,7 +176,7 @@ class GuardrailsService:
         self, content: str, check_type: str = "input"
     ) -> Optional[GuardrailsResult]:
         """
-        Check safety using NeMo Guardrails API.
+        Check safety using Guardrails API.
 
         Args:
             content: The content to check (input or output)
@@ -214,7 +214,7 @@ class GuardrailsService:
             # Use chat completions endpoint for guardrails
             # NOTE: The API approach is currently disabled by default (GUARDRAILS_USE_API=false)
             # because the guardrails endpoint/model may not be available at integrate.api.nvidia.com
-            # Model: nvidia/llama-3.3-nemotron-super-49b-v1.5 at integrate.api.nvidia.com/v1
+            # Model: llama-3.3-70b-versatile at api.groq.com/openai/v1
             # Use pattern matching (default) or SDK (USE_NEMO_GUARDRAILS_SDK=true) instead.
             response = await self.api_client.post(
                 "/chat/completions",

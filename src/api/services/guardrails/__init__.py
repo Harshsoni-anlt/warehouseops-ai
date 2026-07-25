@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NeMo Guardrails service for content safety and compliance
+# Guardrails service for content safety and compliance

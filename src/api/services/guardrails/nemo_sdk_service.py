@@ -14,9 +14,9 @@
 # limitations under the License.
 
 """
-NeMo Guardrails SDK Service Wrapper
+Guardrails SDK Service Wrapper
 
-Provides integration with NeMo Guardrails SDK using Colang configuration.
+Provides integration with Guardrails SDK using Colang configuration.
 This is the new implementation that will replace the pattern-based approach.
 """
 
@@ -31,27 +31,27 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Try to import NeMo Guardrails SDK
+# Try to import Guardrails SDK
 try:
     from nemoguardrails import LLMRails, RailsConfig
     from nemoguardrails.llm.types import Task
     NEMO_SDK_AVAILABLE = True
 except ImportError as e:
     NEMO_SDK_AVAILABLE = False
-    logger.warning(f"NeMo Guardrails SDK not available: {e}")
+    logger.warning(f"Guardrails SDK not available: {e}")
 
 
 class NeMoGuardrailsSDKService:
     """
-    NeMo Guardrails SDK Service using Colang configuration.
+    Guardrails SDK Service using Colang configuration.
     
-    This service uses the official NeMo Guardrails SDK with Colang-based
+    This service uses the official Guardrails SDK with Colang-based
     programmable guardrails for intelligent safety validation.
     """
 
     def __init__(self, config_path: Optional[str] = None):
         """
-        Initialize the NeMo Guardrails SDK service.
+        Initialize the Guardrails SDK service.
         
         Args:
             config_path: Path to the guardrails configuration directory.
@@ -59,7 +59,7 @@ class NeMoGuardrailsSDKService:
         """
         if not NEMO_SDK_AVAILABLE:
             raise ImportError(
-                "NeMo Guardrails SDK is not installed. "
+                "Guardrails SDK is not installed. "
                 "Install it with: pip install nemoguardrails"
             )
 
@@ -81,12 +81,12 @@ class NeMoGuardrailsSDKService:
         self._initialized = False
 
     async def initialize(self) -> None:
-        """Initialize the NeMo Guardrails SDK with configuration."""
+        """Initialize the Guardrails SDK with configuration."""
         if self._initialized:
             return
 
         try:
-            logger.info(f"Initializing NeMo Guardrails SDK from: {self.config_path}")
+            logger.info(f"Initializing Guardrails SDK from: {self.config_path}")
 
             # Load RailsConfig from the config directory
             config = RailsConfig.from_path(str(self.config_path))
@@ -98,17 +98,17 @@ class NeMoGuardrailsSDKService:
             await self.rails.initialize()
 
             self._initialized = True
-            logger.info("NeMo Guardrails SDK initialized successfully")
+            logger.info("Guardrails SDK initialized successfully")
 
         except Exception as e:
-            logger.error(f"Failed to initialize NeMo Guardrails SDK: {e}")
+            logger.error(f"Failed to initialize Guardrails SDK: {e}")
             raise
 
     async def check_input_safety(
         self, user_input: str, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Check if user input is safe using NeMo Guardrails SDK.
+        Check if user input is safe using Guardrails SDK.
         
         Args:
             user_input: The user input to check
@@ -130,7 +130,7 @@ class NeMoGuardrailsSDKService:
         start_time = time.time()
 
         try:
-            # Use NeMo Guardrails to check input
+            # Use Guardrails to check input
             # The SDK will automatically apply input rails defined in Colang
             result = await self.rails.generate_async(
                 messages=[{"role": "user", "content": user_input}]
@@ -172,7 +172,7 @@ class NeMoGuardrailsSDKService:
         self, response: str, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Check if AI response is safe using NeMo Guardrails SDK.
+        Check if AI response is safe using Guardrails SDK.
         
         Args:
             response: The AI response to check
@@ -194,7 +194,7 @@ class NeMoGuardrailsSDKService:
         start_time = time.time()
 
         try:
-            # Use NeMo Guardrails to check output
+            # Use Guardrails to check output
             # The SDK will automatically apply output rails defined in Colang
             # We simulate a conversation to trigger output rails
             result = await self.rails.generate_async(
@@ -259,7 +259,7 @@ class NeMoGuardrailsSDKService:
         return any(indicator in response_lower for indicator in refusal_indicators)
 
     async def close(self) -> None:
-        """Close the NeMo Guardrails SDK service."""
+        """Close the Guardrails SDK service."""
         if self.rails:
             # Clean up resources if needed
             pass

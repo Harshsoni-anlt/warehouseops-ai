@@ -216,6 +216,8 @@ class MCPWarehouseState(TypedDict):
     enable_reasoning: bool  # Enable advanced reasoning
     reasoning_types: Optional[List[str]]  # Specific reasoning types to use
     reasoning_chain: Optional[Dict[str, Any]]  # Reasoning chain from agents
+    routing_confidence: Optional[float]  # Confidence in the routing decision
+    routing_trace: Optional[Dict[str, Any]]  # Scores + matched terms behind the route
 
 
 class MCPIntentClassifier:
@@ -451,159 +453,23 @@ class MCPIntentClassifier:
 
     @classmethod
     def classify_intent(cls, message: str) -> str:
-        """Enhanced intent classification with better logic and ambiguity handling."""
-        message_lower = message.lower()
-        
-        # Check for forecasting-related keywords (high priority)
-        forecasting_score = sum(
-            1 for keyword in cls.FORECASTING_KEYWORDS if keyword in message_lower
-        )
-        if forecasting_score > 0:
-            return "forecasting"
+        """Classify a user message into a planner-graph route.
 
-        # Check for specific safety-related queries first (highest priority)
-        # Safety queries should take precedence over equipment/operations
-        safety_score = sum(
-            1 for keyword in cls.SAFETY_KEYWORDS if keyword in message_lower
-        )
-        
-        # Emergency/urgent safety keywords that should always route to safety
-        emergency_keywords = [
-            "flooding", "flood", "fire", "spill", "leak", "urgent", "critical", 
-            "emergency", "evacuate", "evacuation", "issue", "problem", "malfunction",
-            "failure", "accident", "injury", "hazard", "danger", "unsafe"
-        ]
-        has_emergency = any(keyword in message_lower for keyword in emergency_keywords)
-        
-        # Safety context indicators (broader list)
-        safety_context_indicators = [
-            "procedure", "procedures", "policy", "policies", "incident", "incidents",
-            "compliance", "safety", "ppe", "hazard", "hazards", "report", "reporting",
-            "training", "audit", "checklist", "protocol", "guidelines", "standards",
-            "regulations", "lockout", "tagout", "loto", "corrective", "action",
-            "investigation", "violation", "breach", "concern", "flooding", "flood",
-            "issue", "issues", "problem", "problems", "emergency", "urgent", "critical"
-        ]
-        
-        # Route to safety if:
-        # 1. Has emergency keywords (highest priority)
-        # 2. Has safety keywords AND safety context indicators
-        # 3. Has high safety score (multiple safety keywords)
-        if has_emergency or (safety_score > 0 and any(
-            indicator in message_lower for indicator in safety_context_indicators
-        )) or safety_score >= 2:
-            return "safety"
+        Delegates to ``intent_rules``, which matches on whole words instead of
+        substrings. The previous implementation used ``keyword in message``, so
+        "Acme Steel Bolts" matched "bol" (bill of lading) and "reorder point"
+        matched "po" (purchase order) — both were routed to the document agent.
+        """
+        from src.api.graphs.intent_rules import classify as _classify
 
-        # Check for document-related keywords (but only if it's clearly document-related)
-        document_indicators = [
-            "document",
-            "upload",
-            "scan",
-            "extract",
-            "pdf",
-            "image",
-            "invoice",
-            "receipt",
-            "bol",
-            "bill of lading",
-            "purchase order",
-            "po",
-            "quality",
-            "validation",
-            "approve",
-            "review",
-            "ocr",
-            "text extraction",
-            "file",
-            "photo",
-            "picture",
-            "documentation",
-            "paperwork",
-            "neural",
-            "nemo",
-            "retriever",
-            "parse",
-            "vision",
-            "multimodal",
-            "document processing",
-            "document analytics",
-            "document search",
-            "document status",
-        ]
-        if any(keyword in message_lower for keyword in document_indicators):
-            return "document"
+        return _classify(message)
 
-        # Check for equipment-specific queries (availability, status, assignment)
-        # But only if it's not a workflow operation AND not a safety issue
-        equipment_indicators = [
-            "available", "availability", "status", "utilization", "maintenance",
-            "telemetry", "assignment", "assign", "dispatch", "deploy"
-        ]
-        equipment_objects = [
-            "forklift", "forklifts", "scanner", "scanners", "conveyor", "conveyors",
-            "truck", "trucks", "amr", "agv", "equipment", "machine", "machines",
-            "asset", "assets"
-        ]
+    @classmethod
+    def explain_intent(cls, message: str) -> dict:
+        """Scores and matched terms for the routing decision (used in traces)."""
+        from src.api.graphs.intent_rules import explain as _explain
 
-        # Exclude safety-related equipment queries
-        safety_equipment_terms = [
-            "safety", "incident", "accident", "hazard", "danger", "unsafe",
-            "issue", "problem", "malfunction", "failure", "emergency", "urgent"
-        ]
-        is_safety_equipment_query = any(term in message_lower for term in safety_equipment_terms)
-
-        # Only route to equipment if it's a pure equipment query (not workflow-related, not safety-related)
-        workflow_terms = ["wave", "order", "create", "pick", "pack", "task", "workflow"]
-        is_workflow_query = any(term in message_lower for term in workflow_terms)
-
-        if (
-            not is_workflow_query
-            and not is_safety_equipment_query
-            and any(indicator in message_lower for indicator in equipment_indicators)
-            and any(obj in message_lower for obj in equipment_objects)
-        ):
-            return "equipment"
-
-        # Check for operations-related keywords (workflow, tasks, management)
-        operations_score = sum(
-            1 for keyword in cls.OPERATIONS_KEYWORDS if keyword in message_lower
-        )
-        if operations_score > 0:
-            # Prioritize operations for workflow-related terms
-            workflow_terms = [
-                "task",
-                "wave",
-                "order",
-                "create",
-                "pick",
-                "pack",
-                "management",
-                "workflow",
-                "dispatch",
-            ]
-            if any(term in message_lower for term in workflow_terms):
-                return "operations"
-
-        # Check for equipment-related keywords (fallback)
-        equipment_score = sum(
-            1 for keyword in cls.EQUIPMENT_KEYWORDS if keyword in message_lower
-        )
-        if equipment_score > 0:
-            return "equipment"
-
-        # Handle ambiguous queries
-        ambiguous_patterns = [
-            "inventory",
-            "management",
-            "help",
-            "assistance",
-            "support",
-        ]
-        if any(pattern in message_lower for pattern in ambiguous_patterns):
-            return "ambiguous"
-
-        # Default to equipment for general queries
-        return "equipment"
+        return _explain(message)
 
 
 class MCPPlannerGraph:
@@ -728,13 +594,30 @@ class MCPPlannerGraph:
             # Extract intent string from result (it's a dict)
             keyword_intent = intent_result.get("intent", "general") if isinstance(intent_result, dict) else intent_result
             keyword_confidence = intent_result.get("confidence", 0.7) if isinstance(intent_result, dict) else 0.7
-            
+
+            # Derive confidence from the rule score and keep the matched terms so
+            # the UI can show *why* a query went to a given agent.
+            try:
+                trace = MCPIntentClassifier.explain_intent(message_text)
+                top_score = max(trace["scores"].values()) if trace["scores"] else 0
+                # 3 = one strong term, 6+ = several. Map onto 0.55 - 0.92.
+                keyword_confidence = min(0.92, 0.55 + 0.06 * top_score)
+                state["routing_trace"] = trace
+            except Exception:  # never let the trace break routing
+                trace = None
+
             # Special handling: If keyword classification found worker-related terms, prioritize operations
             # This prevents semantic router from overriding correct worker classification
             message_lower = message_text.lower()
             worker_keywords = ["worker", "workers", "workforce", "employee", "employees", "staff", "team members", "personnel"]
             has_worker_keywords = any(keyword in message_lower for keyword in worker_keywords)
             
+            # Don't let a stray "staff"/"worker" mention pull a safety or
+            # forecasting question into operations — those routes are
+            # deliberate and more specific.
+            if keyword_intent in ("safety", "forecasting", "document"):
+                has_worker_keywords = False
+
             if has_worker_keywords and keyword_intent != "operations":
                 logger.info(f"🔧 Overriding intent from '{keyword_intent}' to 'operations' due to worker keywords")
                 keyword_intent = "operations"
@@ -1592,6 +1475,8 @@ class MCPPlannerGraph:
                 "mcp_tools_used": context.get("mcp_tools_used", []),
                 "tool_execution_results": context.get("tool_execution_results", {}),
                 "available_tools": result.get("available_tools", []),
+                "routing_confidence": result.get("routing_confidence"),
+                "routing_trace": result.get("routing_trace"),
             }
 
         except Exception as e:
@@ -1600,25 +1485,27 @@ class MCPPlannerGraph:
     
     def _create_fallback_response(self, message: str, session_id: str) -> Dict[str, any]:
         """Create a fallback response when MCP graph is unavailable."""
-        # Simple intent detection based on keywords
-        message_lower = message.lower()
-        if any(word in message_lower for word in ["order", "wave", "dispatch", "forklift", "create"]):
-            route = "operations"
-            intent = "operations"
-            response_text = f"I received your request: '{message}'. I understand you want to create a wave and dispatch equipment. The system is processing your request."
-        elif any(word in message_lower for word in ["inventory", "stock", "sku", "quantity"]):
-            route = "inventory"
-            intent = "inventory"
-            response_text = f"I received your query: '{message}'. I can help with inventory questions."
-        elif any(word in message_lower for word in ["equipment", "asset", "machine"]):
-            route = "equipment"
-            intent = "equipment"
-            response_text = f"I received your question: '{message}'. I can help with equipment information."
-        else:
-            route = "general"
-            intent = "general"
-            response_text = f"I received your message: '{message}'. How can I help you?"
-        
+        # Use the same rules as the live router so the fallback is consistent.
+        from src.api.graphs.intent_rules import classify as _classify
+
+        route = intent = _classify(message)
+        blurbs = {
+            "operations": "I can help with tasks, waves, shifts and workforce — but I "
+                          "couldn't reach the operations agent just now.",
+            "equipment": "I can help with inventory and equipment — but I couldn't reach "
+                         "the inventory agent just now.",
+            "safety": "I can help with incidents and compliance — but I couldn't reach "
+                      "the safety agent just now.",
+            "forecasting": "I can help with demand forecasts — but I couldn't reach the "
+                           "forecasting agent just now.",
+            "document": "I can help with uploaded documents — but I couldn't reach the "
+                        "document agent just now.",
+            "general": "I couldn't reach the agent layer just now.",
+        }
+        response_text = (
+            f"{blurbs.get(route, blurbs['general'])} Please try again in a moment."
+        )
+
         return {
             "response": response_text,
             "intent": intent,

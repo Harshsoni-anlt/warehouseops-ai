@@ -289,15 +289,29 @@ class ContextEnhancer:
         insights = []
         message_lower = user_message.lower()
 
-        # Look for high-priority memories that match the current message
+        # Only match on meaningful terms. Splitting on every word meant common
+        # words ("do", "we", "and", "are") matched almost any stored memory, so
+        # unrelated history was prepended to fresh questions — which then
+        # dragged the router to the wrong agent.
+        stopwords = {
+            "the", "and", "are", "for", "you", "our", "was", "have", "has", "had", "with",
+            "what", "when", "where", "which", "who", "how", "why", "does", "did", "can",
+            "show", "tell", "give", "any", "all", "from", "that", "this", "there", "they",
+            "them", "then", "than", "into", "out", "get", "got", "not", "but", "its",
+            "many", "much", "some", "more", "most", "now", "new", "old", "please",
+        }
+        significant = {
+            w.strip("?.,!:;'\"")
+            for w in message_lower.split()
+            if len(w.strip("?.,!:;'\"")) >= 4 and w.strip("?.,!:;'\"") not in stopwords
+        }
+
         high_priority_memories = [
             memory
             for memory in relevant_memories
             if memory.get("priority", 0) >= 3
-            and any(
-                keyword in memory.get("content", "").lower()
-                for keyword in message_lower.split()
-            )
+            and significant
+            and any(term in memory.get("content", "").lower() for term in significant)
         ]
 
         for memory in high_priority_memories[:2]:  # Limit to 2 insights

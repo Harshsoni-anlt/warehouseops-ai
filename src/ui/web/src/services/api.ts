@@ -217,6 +217,16 @@ export interface ChatResponse {
   confidence?: number;
   reasoning_chain?: ReasoningChain;
   reasoning_steps?: ReasoningStep[];
+  mcp_tools_used?: string[];
+  evidence?: any[];
+  /** Confidence in the *routing* decision, distinct from answer confidence. */
+  routing_confidence?: number;
+  /** Per-route keyword scores and the terms that matched — shown in the trace. */
+  routing_trace?: {
+    route: string;
+    scores: Record<string, number>;
+    matched_terms: Record<string, string[]>;
+  };
 }
 
 export interface EquipmentAsset {

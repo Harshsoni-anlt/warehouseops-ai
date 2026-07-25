@@ -497,6 +497,9 @@ class ChatResponse(BaseModel):
     # Reasoning fields
     reasoning_chain: Optional[Dict[str, Any]] = None  # Complete reasoning chain
     reasoning_steps: Optional[List[Dict[str, Any]]] = None  # Individual reasoning steps
+    # Routing transparency: why this message went to this agent
+    routing_confidence: Optional[float] = None
+    routing_trace: Optional[Dict[str, Any]] = None
 
 
 def _create_fallback_chat_response(
@@ -1534,6 +1537,9 @@ async def chat(req: ChatRequest):
                 # Reasoning fields - use cleaned versions
                 reasoning_chain=cleaned_reasoning_chain,
                 reasoning_steps=cleaned_reasoning_steps,
+                # Routing transparency
+                routing_confidence=result.get("routing_confidence") if result else None,
+                routing_trace=result.get("routing_trace") if result else None,
             )
             logger.info("✅ Response created successfully")
             
