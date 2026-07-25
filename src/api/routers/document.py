@@ -537,6 +537,50 @@ async def list_documents(
         raise HTTPException(status_code=500, detail="Failed to list documents")
 
 
+@router.delete("/{document_id}")
+async def delete_document(
+    document_id: str, tools: DocumentActionTools = Depends(get_document_tools)
+):
+    """Remove a document, its stored file and its processing record.
+
+    Uploads accumulated with no way to remove them, so a demo filled up with
+    test files and failed runs from an older pipeline. Deleting through the API
+    (rather than editing the status file by hand) also avoids fighting the
+    running process, which holds the same records in memory.
+    """
+    try:
+        doc = (tools.document_statuses or {}).get(document_id)
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        file_path = doc.get("file_path")
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError as file_error:
+                logger.warning(f"Could not remove file for {document_id}: {file_error}")
+
+        tools.document_statuses.pop(document_id, None)
+        await asyncio.to_thread(tools._save_status_data)
+
+        try:
+            if getattr(tools, "use_database", False) and getattr(tools, "db_service", None):
+                await tools.db_service.db.execute_command(
+                    "DELETE FROM documents WHERE id = $1", str(document_id)
+                )
+        except Exception as db_error:
+            logger.warning(f"Could not remove database row for {document_id}: {db_error}")
+
+        logger.info(f"Deleted document {_sanitize_log_data(document_id)}")
+        return {"success": True, "document_id": document_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete document {_sanitize_log_data(document_id)}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete document")
+
+
 @router.get("/status/{document_id}", response_model=DocumentProcessingResponse)
 async def get_document_status(
     document_id: str, tools: DocumentActionTools = Depends(get_document_tools)

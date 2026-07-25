@@ -553,6 +553,12 @@ export const documentAPI = {
     return response.data;
   },
 
+  deleteDocument: async (documentId: string): Promise<any> => {
+    const safeId = validatePathParam(documentId, 'document_id');
+    const response = await api.delete(`/document/${safeId}`);
+    return response.data;
+  },
+
   getDocumentStatus: async (documentId: string): Promise<any> => {
     const safeId = validatePathParam(documentId, 'documentId');
     const response = await api.get(`/document/status/${safeId}`);

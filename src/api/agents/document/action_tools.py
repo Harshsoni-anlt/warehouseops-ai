@@ -597,6 +597,29 @@ class DocumentActionTools:
                                 except ValueError:
                                     est_completion = None
                         
+                        # The database row can lag behind the in-process store
+                        # (documents uploaded before status syncing existed, or
+                        # a write that failed). Never report a document as still
+                        # running when we already hold its finished state.
+                        mem = self.document_statuses.get(document_id) or {}
+                        mem_status = getattr(mem.get("status"), "value", mem.get("status"))
+                        db_state = str(db_status.get("status") or "").lower()
+                        if mem_status in ("completed", "failed") and db_state not in ("completed", "failed"):
+                            logger.info(
+                                f"Database row for {_sanitize_log_data(document_id)} is behind "
+                                f"the in-memory state ({db_state} < {mem_status}); using memory"
+                            )
+                            return {
+                                "success": True,
+                                "document_id": document_id,
+                                "status": mem_status,
+                                "current_stage": mem.get("current_stage", ""),
+                                "progress": mem.get("progress", 100 if mem_status == "completed" else 0),
+                                "stages": mem.get("stages", []),
+                                "estimated_completion": est_completion,
+                                "error_message": mem.get("error_message"),
+                            }
+
                         return {
                             "success": True,
                             "document_id": db_status["document_id"],

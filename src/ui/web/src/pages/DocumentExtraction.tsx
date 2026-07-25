@@ -1254,6 +1254,20 @@ const DocumentExtraction: React.FC = () => {
             >
               Raw JSON
             </Button>
+            <Box sx={{ flex: 1 }} />
+            <Button
+              size="small"
+              color="error"
+              variant="text"
+              sx={{ textTransform: 'none' }}
+              onClick={async () => {
+                await documentAPI.deleteDocument(document.id);
+                loadDocuments();
+                loadAnalyticsData();
+              }}
+            >
+              Remove
+            </Button>
           </Box>
         </CardContent>
       </Card>
