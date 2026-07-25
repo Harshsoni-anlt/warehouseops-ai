@@ -1,3 +1,4 @@
+import TelemetryPanel from '../components/equipment/TelemetryPanel';
 import React, { useState } from 'react';
 import {
   Box,
@@ -554,32 +555,14 @@ const EquipmentNew: React.FC = () => {
               </Box>
               {selectedAssetId ? (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Asset: {selectedAssetId}
+                  <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.08em', display: 'block', mb: 1.5 }}>
+                    {selectedAssetId} · last 7 days
                   </Typography>
-                  {telemetryLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : telemetryData && telemetryData.length > 0 ? (
-                    <List>
-                      {telemetryData.map((data: any, index: number) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={`${data.metric}: ${data.value} ${data.unit || ''}`}
-                            secondary={`${new Date(data.timestamp).toLocaleString()}${data.quality_score ? ` (Quality: ${(data.quality_score * 100).toFixed(1)}%)` : ''}`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      No telemetry data available for {selectedAssetId} in the last 7 days.
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        Telemetry data may not have been generated yet, or the asset may not have any recent telemetry records.
-                      </Typography>
-                    </Alert>
-                  )}
+                  <TelemetryPanel
+                    assetId={selectedAssetId}
+                    readings={telemetryData as any}
+                    loading={telemetryLoading}
+                  />
                 </Box>
               ) : (
                 <Alert severity="info">

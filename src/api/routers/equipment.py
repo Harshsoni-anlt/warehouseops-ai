@@ -464,6 +464,38 @@ async def release_equipment(request: ReleaseRequest):
         raise HTTPException(status_code=500, detail="Failed to release equipment")
 
 
+# The telemetry table stores `unit` as 'unknown' for every row, so the UI
+# rendered "battery_soc: 67.93 unknown". The unit is a property of the metric,
+# not of the reading — so derive it here rather than backfilling the table.
+_METRIC_UNITS = {
+    "battery_soc": "%",
+    "battery_level": "%",
+    "temp_c": "°C",
+    "temperature": "°C",
+    "speed": "m/s",
+    "location_x": "m",
+    "location_y": "m",
+    "utilization": "%",
+    "load": "kg",
+    "vibration": "mm/s",
+    "runtime_hours": "h",
+    "error_count": "",
+    "throughput": "units/h",
+    "humidity": "%",
+    "pressure": "kPa",
+    "rpm": "rpm",
+    "voltage": "V",
+    "current": "A",
+}
+
+
+def _unit_for(metric: str, stored: Optional[str] = None) -> str:
+    """Unit for a metric. Falls back to the stored value when it is meaningful."""
+    if stored and stored.lower() not in ("unknown", "none", "null", ""):
+        return stored
+    return _METRIC_UNITS.get((metric or "").lower(), "")
+
+
 @router.get("/equipment/{asset_id}/telemetry", response_model=List[EquipmentTelemetry])
 async def get_equipment_telemetry(
     asset_id: str, metric: Optional[str] = None, hours_back: int = 168
@@ -487,7 +519,7 @@ async def get_equipment_telemetry(
                     asset_id=data_point["asset_id"],
                     metric=data_point["metric"],
                     value=data_point["value"],
-                    unit=data_point["unit"],
+                    unit=_unit_for(data_point["metric"], data_point.get("unit")),
                     quality_score=data_point["quality_score"],
                 )
             )
