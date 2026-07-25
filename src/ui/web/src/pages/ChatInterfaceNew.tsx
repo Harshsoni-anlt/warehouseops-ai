@@ -502,7 +502,7 @@ const ChatInterfaceNew: React.FC = () => {
   }
 
   return (
-    <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', backgroundColor: 'background.default', overflow: 'hidden' }}>
+    <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', backgroundColor: 'background.default', overflow: 'hidden', position: 'relative' }}>
       {/* Top Bar */}
       <TopBar
         warehouse={warehouse}
@@ -787,8 +787,8 @@ const ChatInterfaceNew: React.FC = () => {
         />
       </Box>
 
-      {/* Floating Action Buttons */}
-      <Box sx={{ position: 'fixed', bottom: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {/* Panel toggles — anchored top-right so they never sit over the composer */}
+      <Box sx={{ position: 'absolute', top: 12, right: 16, zIndex: 5, display: 'flex', flexDirection: 'row', gap: 1 }}>
         <Fab
           size="small"
           onClick={() => setRightPanelOpen(!rightPanelOpen)}

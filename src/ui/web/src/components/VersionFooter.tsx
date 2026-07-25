@@ -44,7 +44,9 @@ interface VersionFooterProps {
 }
 
 export const VersionFooter: React.FC<VersionFooterProps> = ({
-  show = true,
+  // Off by default: a floating build-hash chip is developer chrome, and it
+  // overlapped the chat composer. Enable with REACT_APP_SHOW_VERSION=true.
+  show = process.env.REACT_APP_SHOW_VERSION === 'true',
   position = 'bottom-right',
   showDetails = true
 }) => {

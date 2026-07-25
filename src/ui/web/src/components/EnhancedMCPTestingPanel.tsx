@@ -1911,7 +1911,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <YAxis />
                       <RechartsTooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="avgTime" stroke="#8884d8" name="Avg Execution Time (ms)" />
+                      <Line type="monotone" dataKey="avgTime" stroke="#6366F1" name="Avg Execution Time (ms)" />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1937,8 +1937,8 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <YAxis />
                       <RechartsTooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="success" stroke="#82ca9d" name="Successful" />
-                      <Line type="monotone" dataKey="failed" stroke="#ff7300" name="Failed" />
+                      <Line type="monotone" dataKey="success" stroke="#10B981" name="Successful" />
+                      <Line type="monotone" dataKey="failed" stroke="#F43F5E" name="Failed" />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1963,7 +1963,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                       <YAxis />
                       <RechartsTooltip />
-                      <Bar dataKey="count" fill="#8884d8" />
+                      <Bar dataKey="count" fill="#6366F1" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (

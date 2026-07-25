@@ -77,7 +77,7 @@ const Analytics: React.FC = () => {
     { severity: 'Critical', count: incidents?.filter(i => i.severity === 'critical').length || 0 },
   ];
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#F43F5E'];
 
   return (
     <Box>
@@ -102,7 +102,7 @@ const Analytics: React.FC = () => {
                   labelFormatter={(label) => `Type: ${label}`}
                 />
                 <Legend />
-                <Bar dataKey="count" fill="#8884d8" name="Equipment Count" />
+                <Bar dataKey="count" fill="#6366F1" name="Equipment Count" />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -123,7 +123,7 @@ const Analytics: React.FC = () => {
                   labelLine={false}
                   label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#6366F1"
                   dataKey="count"
                 >
                   {equipmentStatusData.map((entry, index) => (
@@ -151,7 +151,7 @@ const Analytics: React.FC = () => {
                   labelLine={false}
                   label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#6366F1"
                   dataKey="count"
                 >
                   {equipmentTrendData.map((entry, index) => (
@@ -176,7 +176,7 @@ const Analytics: React.FC = () => {
                 <XAxis dataKey="severity" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
+                <Bar dataKey="count" fill="#6366F1" />
               </BarChart>
             </ResponsiveContainer>
           </Paper>

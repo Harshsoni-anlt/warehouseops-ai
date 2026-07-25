@@ -52,6 +52,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { equipmentAPI, EquipmentAsset } from '../services/api';
 import { TabPanel } from '../components/common';
+import { SERIES, AXIS, GRID, ChartTooltip, legendStyle } from '../theme/chartTheme';
 
 const EquipmentNew: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -914,41 +915,44 @@ const EquipmentNew: React.FC = () => {
                       ) : (
                         <Box sx={{ height: 300 }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={drawerTelemetry.slice(-50)}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis 
-                                dataKey="timeLabel" 
-                                tick={{ fontSize: 12 }}
-                                angle={-45}
-                                textAnchor="end"
-                                height={80}
+                            <LineChart data={drawerTelemetry.slice(-50)} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                              <CartesianGrid stroke={GRID.stroke} vertical={false} />
+                              <XAxis
+                                dataKey="timeLabel"
+                                tick={AXIS.tick}
+                                tickLine={false}
+                                axisLine={AXIS.line}
+                                minTickGap={28}
+                                tickFormatter={(v: string) => {
+                                  const d = new Date(v);
+                                  return isNaN(d.getTime()) ? v : d.toLocaleTimeString([], { hour: 'numeric' });
+                                }}
                               />
-                              <YAxis />
-                              <RechartsTooltip />
-                              <Legend />
+                              <YAxis tick={AXIS.tick} tickLine={false} axisLine={false} width={44} />
+                              <RechartsTooltip content={<ChartTooltip />} cursor={{ stroke: '#CBD5E1', strokeWidth: 1 }} />
+                              <Legend wrapperStyle={legendStyle} iconType="plainline" iconSize={14} />
                               {telemetryMetrics.length > 0 ? (
-                                telemetryMetrics.map((metric: string, index: number) => {
-                                  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#0088fe'];
-                                  return (
-                                    <Line 
-                                      key={metric}
-                                      type="monotone" 
-                                      dataKey={metric} 
-                                      stroke={colors[index % colors.length]} 
-                                      name={metric.replace(/_/g, ' ')}
-                                      strokeWidth={2}
-                                      dot={false}
-                                    />
-                                  );
-                                })
+                                telemetryMetrics.map((metric: string, index: number) => (
+                                  <Line
+                                    key={metric}
+                                    type="monotone"
+                                    dataKey={metric}
+                                    stroke={SERIES[index % SERIES.length]}
+                                    name={metric.replace(/_/g, ' ')}
+                                    strokeWidth={2}
+                                    dot={false}
+                                    activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
+                                  />
+                                ))
                               ) : (
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="value" 
-                                  stroke="#8884d8" 
+                                <Line
+                                  type="monotone"
+                                  dataKey="value"
+                                  stroke={SERIES[0]}
                                   name="Value"
                                   strokeWidth={2}
                                   dot={false}
+                                  activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
                                 />
                               )}
                             </LineChart>
