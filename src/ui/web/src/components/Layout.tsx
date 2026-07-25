@@ -190,7 +190,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, width: { md: `calc(100% - ${drawerWidth}px)` }, minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Box component="main" sx={{
+        flexGrow: 1,
+        // A flex item defaults to min-width:auto, so a wide child (the tasks
+        // DataGrid) stretched this column past the viewport and squeezed the
+        // page to ~60% width. minWidth:0 lets it shrink to its flex basis.
+        minWidth: 0,
+        width: { md: `calc(100% - ${drawerWidth}px)` },
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        overflowX: 'hidden',
+      }}>
         <Toolbar sx={{ minHeight: '64px !important' }} />
         {/* The assistant is a full-height app surface: it manages its own
             scrolling, so page padding would break its height math. */}

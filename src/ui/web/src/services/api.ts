@@ -489,6 +489,29 @@ export const operationsAPI = {
     return response.data;
   },
   
+  createTask: async (data: {
+    kind: string;
+    status?: string;
+    assignee?: string;
+    payload?: Record<string, any>;
+  }): Promise<Task> => {
+    const response = await api.post('/operations/tasks', {
+      kind: data.kind,
+      status: data.status || 'pending',
+      assignee: data.assignee || null,
+      payload: data.payload || {},
+    });
+    return response.data;
+  },
+
+  updateTask: async (
+    taskId: number,
+    data: { status?: string; assignee?: string; payload?: Record<string, any> }
+  ): Promise<Task> => {
+    const response = await api.put(`/operations/tasks/${taskId}`, data);
+    return response.data;
+  },
+
   assignTask: async (taskId: number, assignee: string): Promise<Task> => {
     const response = await api.post(`/operations/tasks/${taskId}/assign`, {
       assignee,

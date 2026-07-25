@@ -51,19 +51,73 @@ const Operations: React.FC = () => {
     queryFn: userAPI.getUsers
   });
 
-  const assignMutation = useMutation({
-    mutationFn: ({ taskId, assignee }: { taskId: number; assignee: string }) =>
-      operationsAPI.assignTask(taskId, assignee),
-      onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        handleClose();
-    }
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['workforce'] });
+  };
+
+  const onSaved = () => {
+    setSaveError(null);
+    refresh();
+    handleClose();
+  };
+
+  const onFailed = (e: any) =>
+    setSaveError(e?.response?.data?.message || e?.message || 'Could not save the task');
+
+  const createMutation = useMutation({
+    mutationFn: operationsAPI.createTask,
+    onSuccess: onSaved,
+    onError: onFailed,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ taskId, data }: { taskId: number; data: any }) =>
+      operationsAPI.updateTask(taskId, data),
+    onSuccess: onSaved,
+    onError: onFailed,
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  // One dialog does both jobs: creating a task and editing an existing one.
+  // Previously the "Create" branch existed but nothing could reach it — there
+  // was no button to open the dialog without a row, and submit only assigned.
   const handleSubmit = () => {
-    if (selectedTask && formData.assignee) {
-      assignMutation.mutate({ taskId: selectedTask.id, assignee: formData.assignee });
+    setSaveError(null);
+    if (selectedTask) {
+      updateMutation.mutate({
+        taskId: selectedTask.id,
+        data: {
+          status: formData.status || selectedTask.status,
+          assignee: formData.assignee ?? selectedTask.assignee,
+        },
+      });
+      return;
     }
+    if (!formData.kind) {
+      setSaveError('Task type is required');
+      return;
+    }
+    createMutation.mutate({
+      kind: formData.kind,
+      status: formData.status || 'pending',
+      assignee: formData.assignee || undefined,
+    });
+  };
+
+  const openCreate = () => {
+    setSaveError(null);
+    setSelectedTask(null);
+    setFormData({ kind: '', status: 'pending', assignee: '' } as any);
+    setOpen(true);
+  };
+
+  const openEdit = (task: Task) => {
+    setSaveError(null);
+    handleOpen(task);
   };
 
   const columns: GridColDef[] = [
@@ -90,13 +144,11 @@ const Operations: React.FC = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 110,
+      sortable: false,
       renderCell: (params) => (
-        <Button
-          size="small"
-          onClick={() => handleOpen(params.row)}
-        >
-          Assign
+        <Button size="small" onClick={() => openEdit(params.row)}>
+          Edit
         </Button>
       ),
     },
@@ -117,125 +169,91 @@ const Operations: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Operations Management
-      </Typography>
-
-      {/* Workforce Status */}
-      {workforceStatus && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Workforce Status
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2,
+          gap: 2,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box>
+          <Typography variant="h4">Operations</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Tasks, assignments and workforce status
           </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'primary.light',
-                color: 'primary.contrastText'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {workforceStatus.total_workers}
-                </Typography>
-                <Typography variant="body2">
-                  Total Workers
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'success.light',
-                color: 'success.contrastText'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {workforceStatus.active_workers}
-                </Typography>
-                <Typography variant="body2">
-                  Active Workers
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'info.light',
-                color: 'info.contrastText'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {workforceStatus.available_workers}
-                </Typography>
-                <Typography variant="body2">
-                  Available Workers
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'warning.light',
-                color: 'warning.contrastText'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {workforceStatus.tasks_in_progress}
-                </Typography>
-                <Typography variant="body2">
-                  Tasks in Progress
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={6}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'secondary.light',
-                color: 'secondary.contrastText'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {workforceStatus.tasks_pending}
-                </Typography>
-                <Typography variant="body2">
-                  Pending Tasks
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={6}>
-              <Box sx={{ 
-                p: 2, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 2,
-                textAlign: 'center',
-                backgroundColor: 'grey.200',
-                color: 'text.primary'
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {Math.round((workforceStatus.active_workers / workforceStatus.total_workers) * 100)}%
-                </Typography>
-                <Typography variant="body2">
-                  Workforce Utilization
-                </Typography>
-              </Box>
-            </Grid>
+        </Box>
+        <Button variant="contained" onClick={openCreate}>
+          New task
+        </Button>
+      </Box>
+
+      {/* Workforce status.
+          These were six cards in six different pastel fills — primary, success,
+          info, warning, secondary and grey — which read as six unrelated
+          severities rather than one set of numbers. Now one neutral card
+          treatment, with colour reserved for the one figure that carries a
+          judgement (utilisation). */}
+      {workforceStatus && (
+        <Paper variant="outlined" sx={{ p: 2.5, mb: 3, borderRadius: 2 }}>
+          <Typography
+            variant="overline"
+            sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}
+          >
+            Workforce
+          </Typography>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            {(() => {
+              const util =
+                workforceStatus.total_workers > 0
+                  ? Math.round(
+                      (workforceStatus.active_workers / workforceStatus.total_workers) * 100
+                    )
+                  : 0;
+              const cards = [
+                { label: 'Total workers', value: workforceStatus.total_workers },
+                { label: 'Active', value: workforceStatus.active_workers },
+                { label: 'Available', value: workforceStatus.available_workers },
+                { label: 'In progress', value: workforceStatus.tasks_in_progress },
+                { label: 'Pending', value: workforceStatus.tasks_pending },
+                {
+                  label: 'Utilisation',
+                  value: `${util}%`,
+                  accent:
+                    util >= 90 ? 'warning.main' : util >= 40 ? 'success.main' : 'text.primary',
+                },
+              ];
+              return cards.map((c) => (
+                <Grid item xs={6} sm={4} md={2} key={c.label}>
+                  <Box
+                    sx={{
+                      p: 1.75,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 600,
+                        lineHeight: 1.1,
+                        fontVariantNumeric: 'tabular-nums',
+                        color: (c as any).accent || 'text.primary',
+                      }}
+                    >
+                      {c.value}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {c.label}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ));
+            })()}
           </Grid>
         </Paper>
       )}
@@ -258,9 +276,14 @@ const Operations: React.FC = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {selectedTask ? 'Assign Task' : 'Create New Task'}
+          {selectedTask ? `Edit task #${selectedTask.id}` : 'New task'}
         </DialogTitle>
         <DialogContent>
+          {saveError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {saveError}
+            </Alert>
+          )}
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <TextField
@@ -270,6 +293,11 @@ const Operations: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, kind: e.target.value })}
                 disabled={!!selectedTask}
                 required
+                helperText={
+                  selectedTask
+                    ? 'Task type cannot be changed after creation'
+                    : 'e.g. cycle_count, replenishment, pick, putaway'
+                }
               />
             </Grid>
             <Grid item xs={12}>
@@ -313,9 +341,9 @@ const Operations: React.FC = () => {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={assignMutation.isPending}
+            disabled={saving}
           >
-            {selectedTask ? 'Assign' : 'Create'}
+            {saving ? 'Saving…' : selectedTask ? 'Save changes' : 'Create task'}
           </Button>
         </DialogActions>
       </Dialog>

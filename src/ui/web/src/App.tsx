@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Box } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -26,8 +25,11 @@ import VersionFooter from './components/VersionFooter';
 function App() {
   return (
     <AuthProvider>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <Routes>
+      {/* Layout already renders the flex row (sidebar + main). Wrapping it in a
+          second identical flex container made Layout a content-sized flex item,
+          so `main` never grew to fill the window and every page rendered in a
+          ~60%-wide column with dead space to the right. */}
+      <Routes>
           <Route path="/login" element={<Login />} />
           <Route
             path="/*"
@@ -57,9 +59,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
-        <VersionFooter />
-      </Box>
+      </Routes>
+      <VersionFooter />
     </AuthProvider>
   );
 }
