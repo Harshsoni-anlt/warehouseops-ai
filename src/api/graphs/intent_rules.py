@@ -16,7 +16,7 @@ word-boundary matching plus a score-and-compare step instead of a chain of early
 returns, so that a single weak keyword can no longer hijack the route.
 
 Routes returned here must exist as nodes in the planner graph:
-``equipment | operations | safety | forecasting | document | general``
+``equipment | inventory | operations | safety | forecasting | document | general``
 """
 
 from __future__ import annotations
@@ -59,20 +59,27 @@ SAFETY: Terms = [
 ]
 
 EQUIPMENT: Terms = [
-    # assets
     ("forklift", 3), ("forklifts", 3), ("amr", 3), ("agv", 3),
     ("conveyor", 3), ("conveyors", 3), ("scanner", 3), ("scanners", 3),
     ("charger", 3), ("chargers", 3), ("asset", 2), ("assets", 2),
     ("equipment", 3), ("telemetry", 3), ("battery", 3), ("maintenance", 3),
-    ("utilization", 2), ("downtime", 2), ("uptime", 2),
-    # inventory (served by the same agent)
+    ("utilization", 2), ("downtime", 2), ("uptime", 2), ("machine", 2),
+    ("machines", 2), ("fleet", 2), ("charging", 2), ("breakdown", 2),
+]
+
+# Stock questions read inventory_items. Equipment reads equipment_assets. They
+# are different tables, so they get different agents — routing a stock question
+# to the equipment agent produces a confident "that item does not exist".
+INVENTORY: Terms = [
     ("inventory", 3), ("stock", 3), ("sku", 3), ("skus", 3),
     ("on hand", 3), ("on-hand", 3), ("quantity", 2), ("quantities", 2),
     ("reorder", 3), ("reorder point", 3), ("safety stock", 3),
-    ("stored", 2), ("storage", 2), ("location", 2), ("locations", 2),
-    ("bin", 2), ("aisle", 3), ("rack", 2), ("pallet", 2), ("pallets", 2),
-    ("units", 1), ("available", 1), ("availability", 1), ("count", 1),
-    ("stockout", 3), ("shortage", 2), ("replenish", 3), ("replenishment", 3),
+    ("stored", 3), ("storage", 2), ("stocked", 3),
+    ("bin", 2), ("aisle", 2), ("rack", 2), ("pallet", 2), ("pallets", 2),
+    ("units", 2), ("stockout", 3), ("stockouts", 3), ("shortage", 2),
+    ("replenish", 3), ("replenishment", 3), ("restock", 3),
+    ("how many", 2), ("item", 2), ("items", 2), ("product", 2), ("products", 2),
+    ("count", 1), ("cycle count", 3), ("low stock", 3),
 ]
 
 OPERATIONS: Terms = [
@@ -96,13 +103,14 @@ _ROUTES: Dict[str, Terms] = {
     "forecasting": FORECASTING,
     "safety": SAFETY,
     "equipment": EQUIPMENT,
+    "inventory": INVENTORY,
     "operations": OPERATIONS,
 }
 
 # Tie-break order when two routes score identically. Safety first because a
 # missed safety query is the most costly error; document last because it is the
 # route the old substring matcher over-triggered.
-_PRIORITY = ["safety", "forecasting", "operations", "equipment", "document"]
+_PRIORITY = ["safety", "forecasting", "equipment", "inventory", "operations", "document"]
 
 _MIN_SCORE = 2  # below this the message is treated as general chit-chat
 

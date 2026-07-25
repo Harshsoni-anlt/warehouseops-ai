@@ -12,15 +12,18 @@ import pytest
 from src.api.graphs.intent_rules import classify, explain
 
 CASES = [
-    # inventory / equipment (same agent)
-    ("How many Acme Steel Bolts do we have and where are they stored?", "equipment"),
-    ("What is my current inventory level?", "equipment"),
-    ("Which items are below reorder point?", "equipment"),
-    ("Where is SKU-1042 located?", "equipment"),
+    # inventory (inventory_items)
+    ("How many Acme Steel Bolts do we have and where are they stored?", "inventory"),
+    ("What is my current inventory level?", "inventory"),
+    ("Which items are below reorder point?", "inventory"),
+    ("Where is SKU-1042 located?", "inventory"),
+    ("Show me low stock items", "inventory"),
+    ("How many units of Doritos do we have?", "inventory"),
+    # equipment (equipment_assets)
     ("Which forklifts are available right now?", "equipment"),
     ("What is the battery level of AMR-02?", "equipment"),
     ("Is forklift FL-03 due for maintenance?", "equipment"),
-    ("What is the utilization report for last week?", "equipment"),
+    ("What is the equipment utilization report?", "equipment"),
     # operations
     ("Create a pick wave for zone A", "operations"),
     ("How many tasks are open today?", "operations"),

@@ -70,8 +70,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const getAgentIcon = (route?: string) => {
     switch (route) {
       case 'equipment': return '🔧';
+      case 'inventory': return '📦';
       case 'operations': return '📋';
       case 'safety': return '🛡️';
+      case 'forecasting': return '📈';
+      case 'document': return '📄';
       default: return '🤖';
     }
   };
@@ -79,8 +82,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const getAgentColor = (route?: string) => {
     switch (route) {
       case 'equipment': return '#0D9488';
+      case 'inventory': return '#4F46E5';
       case 'operations': return '#2196F3';
       case 'safety': return '#FF9800';
+      case 'forecasting': return '#7C3AED';
+      case 'document': return '#0EA5E9';
       default: return '#9C27B0';
     }
   };

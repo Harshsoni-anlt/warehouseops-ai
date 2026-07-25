@@ -535,6 +535,7 @@ class MCPPlannerGraph:
         # Add nodes
         workflow.add_node("route_intent", self._mcp_route_intent)
         workflow.add_node("equipment", self._mcp_equipment_agent)
+        workflow.add_node("inventory", self._mcp_inventory_agent)
         workflow.add_node("operations", self._mcp_operations_agent)
         workflow.add_node("safety", self._mcp_safety_agent)
         workflow.add_node("forecasting", self._mcp_forecasting_agent)
@@ -552,6 +553,7 @@ class MCPPlannerGraph:
             self._route_to_agent,
             {
                 "equipment": "equipment",
+                "inventory": "inventory",
                 "operations": "operations",
                 "safety": "safety",
                 "forecasting": "forecasting",
@@ -563,6 +565,7 @@ class MCPPlannerGraph:
 
         # Add edges from agents to synthesis
         workflow.add_edge("equipment", "synthesize")
+        workflow.add_edge("inventory", "synthesize")
         workflow.add_edge("operations", "synthesize")
         workflow.add_edge("safety", "synthesize")
         workflow.add_edge("forecasting", "synthesize")
@@ -859,6 +862,53 @@ class MCPPlannerGraph:
         except Exception as e:
             logger.error(f"Error in MCP equipment agent: {e}", exc_info=True)
             state["agent_responses"]["equipment"] = _create_error_response("equipment", message_text, e, is_timeout=False)
+
+        return state
+
+    async def _mcp_inventory_agent(self, state: MCPWarehouseState) -> MCPWarehouseState:
+        """Handle stock questions with the inventory agent (reads inventory_items)."""
+        message_text = _extract_message_text(state)
+        try:
+            from src.api.agents.inventory.inventory_agent import get_inventory_agent
+
+            if not message_text:
+                state["agent_responses"]["inventory"] = {
+                    "natural_language": "No message to process",
+                    "data": {},
+                    "recommendations": [],
+                    "confidence": 0.0,
+                    "response_type": "error",
+                }
+                return state
+
+            agent = await asyncio.wait_for(
+                get_inventory_agent(), timeout=AGENT_INIT_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                agent.process_query(
+                    query=message_text,
+                    session_id=state.get("session_id", "default"),
+                    context=state.get("context", {}),
+                ),
+                timeout=30.0,
+            )
+            state["agent_responses"]["inventory"] = _convert_response_to_dict(
+                response, "inventory_info"
+            )
+            logger.info(
+                f"Inventory agent responded with confidence {response.confidence}"
+            )
+
+        except asyncio.TimeoutError as e:
+            logger.error(f"Timeout in inventory agent: {e}")
+            state["agent_responses"]["inventory"] = _create_error_response(
+                "inventory", message_text, e, is_timeout=True
+            )
+        except Exception as e:
+            logger.error(f"Error in inventory agent: {e}", exc_info=True)
+            state["agent_responses"]["inventory"] = _create_error_response(
+                "inventory", message_text, e, is_timeout=False
+            )
 
         return state
 
@@ -1365,9 +1415,22 @@ class MCPPlannerGraph:
 
         return state
 
+    #: Nodes the conditional edge map can actually reach. The semantic router
+    #: has its own category vocabulary, so an unknown label here would crash
+    #: LangGraph at runtime rather than at import.
+    VALID_ROUTES = {
+        "equipment", "inventory", "operations", "safety",
+        "forecasting", "document", "general", "ambiguous",
+    }
+
     def _route_to_agent(self, state: MCPWarehouseState) -> str:
         """Route to the appropriate agent based on MCP intent classification."""
         routing_decision = state.get("routing_decision", "general")
+        if routing_decision not in self.VALID_ROUTES:
+            logger.warning(
+                f"Unknown route '{routing_decision}' — falling back to general"
+            )
+            return "general"
         return routing_decision
 
     async def process_warehouse_query(
