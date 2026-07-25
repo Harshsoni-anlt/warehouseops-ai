@@ -64,6 +64,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const go = (path: string) => { navigate(path); if (isMobile) setMobileOpen(false); };
 
+  const isFullBleed = location.pathname === '/chat';
+
   const currentTitle =
     navGroups.flatMap(g => g.items).find(i => i.path === location.pathname)?.text ?? 'WarehouseOps AI';
 
@@ -189,9 +191,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <Box component="main" sx={{ flexGrow: 1, width: { md: `calc(100% - ${drawerWidth}px)` }, minHeight: '100vh', bgcolor: 'background.default' }}>
         <Toolbar sx={{ minHeight: '64px !important' }} />
-        <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 3.5 }, maxWidth: 1440, mx: 'auto' }}>
-          {children}
-        </Box>
+        {/* The assistant is a full-height app surface: it manages its own
+            scrolling, so page padding would break its height math. */}
+        {isFullBleed ? (
+          children
+        ) : (
+          <Box sx={{ px: { xs: 2, md: 4 }, py: { xs: 2, md: 3.5 }, maxWidth: 1440, mx: 'auto' }}>
+            {children}
+          </Box>
+        )}
       </Box>
     </Box>
   );

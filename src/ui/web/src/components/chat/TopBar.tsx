@@ -1,149 +1,95 @@
 import React from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Select,
-  MenuItem,
-  Chip,
-  Box,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  Settings as SettingsIcon,
-  Wifi as WifiIcon,
-  WifiOff as WifiOffIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Select, MenuItem, Tooltip, Stack, Divider } from '@mui/material';
 
 interface TopBarProps {
   warehouse: string;
   role: string;
   environment: string;
-  connections: {
-    nim: boolean;
-    db: boolean;
-    milvus: boolean;
-    kafka: boolean;
-  };
+  connections: { nim: boolean; db: boolean; milvus: boolean; kafka: boolean };
   onWarehouseChange: (warehouse: string) => void;
   onRoleChange: (role: string) => void;
   onEnvironmentChange: (env: string) => void;
 }
 
+/**
+ * Context strip for the assistant.
+ *
+ * This sits directly under the application header, so it deliberately does NOT
+ * look like a second header: no elevation, no title, 40px tall, muted labels.
+ * Service health is a row of dots rather than four wifi glyphs — status is a
+ * glance, not a read.
+ */
 const TopBar: React.FC<TopBarProps> = ({
-  warehouse,
-  role,
-  environment,
-  connections,
-  onWarehouseChange,
-  onRoleChange,
-  onEnvironmentChange,
+  warehouse, role, connections, onWarehouseChange, onRoleChange,
 }) => {
-  const getConnectionIcon = (connected: boolean) => {
-    return connected ? <WifiIcon /> : <WifiOffIcon />;
+  const services = [
+    { key: 'LLM (Groq)', ok: connections.nim },
+    { key: 'Database', ok: connections.db },
+    { key: 'Vector store', ok: connections.milvus },
+  ];
+  const allOk = services.every(s => s.ok);
+
+  const selectSx = {
+    '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+    '& .MuiSelect-select': { py: 0.25, pl: 0.75, pr: '22px !important', fontSize: '0.8125rem', fontWeight: 600, color: 'text.primary' },
+    '& .MuiSvgIcon-root': { fontSize: 18, color: 'text.disabled' },
+    minHeight: 0,
   };
 
   return (
-    <AppBar 
-      position="static" 
-      sx={{ 
-        backgroundColor: 'background.paper',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        boxShadow: 1,
+    <Box
+      sx={{
+        height: 40, px: 2, flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 1.5,
+        borderBottom: '1px solid', borderColor: 'divider',
+        bgcolor: 'grey.50',
       }}
     >
-      <Toolbar sx={{ minHeight: '48px !important', gap: 2 }}>
-        {/* Warehouse Selector */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ color: 'text.primary', minWidth: '80px', fontWeight: 500 }}>
-            Warehouse:
-          </Typography>
-          <Select
-            value={warehouse}
-            onChange={(e) => onWarehouseChange(e.target.value)}
-            size="small"
-            sx={{
-              color: 'text.primary',
-              backgroundColor: 'background.default',
-              minWidth: 120,
-            }}
-          >
-            <MenuItem value="WH-01">WH-01</MenuItem>
-            <MenuItem value="WH-02">WH-02</MenuItem>
-            <MenuItem value="WH-03">WH-03</MenuItem>
-          </Select>
-        </Box>
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Site</Typography>
+        <Select value={warehouse} onChange={e => onWarehouseChange(e.target.value)} variant="outlined" sx={selectSx}>
+          <MenuItem value="WH-01">WH-01</MenuItem>
+          <MenuItem value="WH-02">WH-02</MenuItem>
+        </Select>
+      </Stack>
 
-        {/* Role Selector */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ color: 'text.primary', minWidth: '50px', fontWeight: 500 }}>
-            Role:
-          </Typography>
-          <Select
-            value={role}
-            onChange={(e) => onRoleChange(e.target.value)}
-            size="small"
-            sx={{
-              color: 'text.primary',
-              backgroundColor: 'background.default',
-              minWidth: 120,
-            }}
-          >
-            <MenuItem value="operator">Operator</MenuItem>
-            <MenuItem value="supervisor">Supervisor</MenuItem>
-            <MenuItem value="manager">Manager</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-          </Select>
-        </Box>
+      <Divider orientation="vertical" flexItem sx={{ my: 1.25 }} />
 
-        {/* Environment */}
-        <Chip
-          label={environment}
-          size="small"
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Role</Typography>
+        <Select value={role} onChange={e => onRoleChange(e.target.value)} variant="outlined" sx={selectSx}>
+          <MenuItem value="manager">Manager</MenuItem>
+          <MenuItem value="operator">Operator</MenuItem>
+          <MenuItem value="viewer">Viewer</MenuItem>
+        </Select>
+      </Stack>
+
+      <Box sx={{ flexGrow: 1 }} />
+
+      <Tooltip
+        title={services.map(s => `${s.key}: ${s.ok ? 'connected' : 'unavailable'}`).join(' · ')}
+        arrow
+      >
+        <Stack direction="row" alignItems="center" spacing={0.75}
           sx={{
-            backgroundColor: environment === 'Prod' ? '#f44336' : '#0D9488',
-            color: '#ffffff',
-            fontWeight: 'bold',
-          }}
-        />
-
-        {/* Connection Health */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
-          <Tooltip title="LLM (Groq)">
-            <IconButton size="small" sx={{ color: connections.nim ? '#0D9488' : '#999999' }}>
-              {getConnectionIcon(connections.nim)}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Database Connection">
-            <IconButton size="small" sx={{ color: connections.db ? '#0D9488' : '#999999' }}>
-              {getConnectionIcon(connections.db)}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Vector store">
-            <IconButton size="small" sx={{ color: connections.milvus ? '#0D9488' : '#999999' }}>
-              {getConnectionIcon(connections.milvus)}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Kafka Connection">
-            <IconButton size="small" sx={{ color: connections.kafka ? '#0D9488' : '#999999' }}>
-              {getConnectionIcon(connections.kafka)}
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        {/* Time Window */}
-        <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: '100px' }}>
-          {new Date().toLocaleTimeString()}
-        </Typography>
-
-        {/* Settings */}
-        <IconButton size="small" sx={{ color: 'text.primary' }}>
-          <SettingsIcon />
-        </IconButton>
-      </Toolbar>
-    </AppBar>
+            px: 1, py: 0.375, borderRadius: 99, border: '1px solid', borderColor: 'divider',
+            bgcolor: 'background.paper', cursor: 'default',
+            mr: 11, // clear the panel toggles anchored at the top-right
+          }}>
+          <Stack direction="row" spacing={0.5}>
+            {services.map(s => (
+              <Box key={s.key} sx={{
+                width: 6, height: 6, borderRadius: '50%',
+                bgcolor: s.ok ? 'primary.main' : 'grey.300',
+              }} />
+            ))}
+          </Stack>
+          <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: allOk ? 'primary.dark' : 'text.secondary' }}>
+            {allOk ? 'All systems live' : 'Degraded'}
+          </Typography>
+        </Stack>
+      </Tooltip>
+    </Box>
   );
 };
 
