@@ -1,0 +1,54 @@
+# --- Web framework ---
+fastapi>=0.120.0
+starlette>=0.49.1
+uvicorn[standard]==0.30.1
+pydantic>=2.7
+python-multipart
+
+# --- Async / HTTP ---
+httpx>=0.27.0          # OpenAI-compatible calls to Groq / local Ollama
+anyio>=4.0.0
+aiohttp>=3.13.3
+
+# --- Agent orchestration ---
+langgraph>=1.0.5
+langgraph-checkpoint>=3.0.0
+langchain-core>=1.2.6
+nemoguardrails>=0.19.0  # programmable guardrails (LLM-agnostic; points at Groq/Ollama)
+
+# --- LLM + embeddings (free stack) ---
+# Chat: Groq (default) or local Ollama, via httpx — no SDK needed.
+sentence-transformers>=2.2.2   # local CPU embeddings (all-MiniLM-L6-v2)
+tiktoken
+
+# --- Vector store (local, no server) ---
+chromadb>=0.5.0
+
+# --- Database (local, no server) ---
+aiosqlite>=0.19.0
+asyncpg>=0.29.0        # legacy: only used by the optional migration module
+
+# --- Caching ---
+redis>=5.0.0           # optional; in-memory fallback exists
+
+# --- Data / ML ---
+numpy>=1.24.0
+pandas>=1.2.4
+scikit-learn>=1.5.0
+xgboost>=1.6.0
+
+# --- Document processing ---
+Pillow>=10.3.0
+pdf2image==1.17.0      # requires poppler-utils system package
+pdfplumber==0.11.8
+
+# --- Auth / config / utils ---
+python-dotenv>=1.0
+loguru>=0.7
+PyYAML>=6.0
+PyJWT>=2.8.0
+passlib[bcrypt]>=1.7.4
+email-validator>=2.0.0
+click>=8.0.0
+psutil>=5.9.0
+prometheus-client>=0.19.0

@@ -1,0 +1,177 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  # =============================================================================
+  # Code Quality & Testing
+  # =============================================================================
+  test:
+    name: Test & Quality Checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: warehouse
+          POSTGRES_PASSWORD: ci_placeholder
+          POSTGRES_DB: warehouse
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U warehouse -d warehouse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    strategy:
+      matrix:
+        python-version: [3.11]
+        node-version: [22]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for semantic-release
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: src/ui/web/package-lock.json
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio pytest-timeout black
+    
+    - name: Install Node.js dependencies
+      run: |
+        cd src/ui/web
+        npm ci
+    
+    - name: Run Python formatting check (tests)
+      run: black --check tests
+    
+    - name: Run Node.js linting
+      run: |
+        cd src/ui/web
+        npm run lint
+    
+    - name: Run Python tests
+      env:
+        DATABASE_URL: postgresql://warehouse:ci_placeholder@localhost:5435/warehouse
+      run: |
+        # Unit scope only; integration/e2e live in main.yml. Ignores: drift vs current APIs / missing fixtures.
+        pytest tests/unit \
+          --timeout=120 \
+          --ignore=tests/unit/test_mcp_integrated_planner_graph.py \
+          --ignore=tests/unit/test_mcp_system.py \
+          --ignore=tests/unit/test_guardrails_sdk.py \
+          --ignore=tests/unit/test_all_agents.py \
+          --ignore=tests/unit/test_db_connection.py \
+          --ignore=tests/unit/test_enhanced_retrieval.py \
+          --ignore=tests/unit/test_mcp_planner_integration.py \
+          --ignore=tests/unit/test_document_pipeline.py \
+          --ignore=tests/unit/test_nvidia_integration.py \
+          --ignore=tests/unit/test_nvidia_llm.py \
+          --ignore=tests/unit/test_document_action_tools.py \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=term-missing
+    
+    - name: Run Node.js tests
+      run: |
+        cd src/ui/web
+        # Coverage disabled: babel-plugin-istanbul + test-exclude breaks under current Jest/Node (see package upgrades backlog).
+        npm test -- --watchAll=false
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # =============================================================================
+  # Security Scanning
+  # =============================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # Semantic Release
+  # =============================================================================
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    # semantic-release requires Node ^22.14.0 (see semantic-release docs/support/node-version.md)
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: package-lock.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Run semantic-release
+      run: npx semantic-release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

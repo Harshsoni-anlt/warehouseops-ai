@@ -1,0 +1,51 @@
+{
+  "name": "warehouseops-ai",
+  "version": "1.0.0",
+  "description": "Multi-agent warehouse operations assistant that runs on free, open-source infrastructure",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "semantic-release": "semantic-release",
+    "commit": "git-cz",
+    "prepare": "husky install",
+    "release": "semantic-release",
+    "changelog": "npx conventional-changelog-cli -p conventionalcommits -i CHANGELOG.md -s",
+    "version": "echo 'Version script removed - use semantic-release for versioning'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/T-DevH/Multi-Agent-Intelligent-Warehouse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/T-DevH/Multi-Agent-Intelligent-Warehouse/issues"
+  },
+  "homepage": "https://github.com/T-DevH/Multi-Agent-Intelligent-Warehouse#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "commitizen": "^4.3.1",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7"
+  },
+  "dependencies": {
+    "license-checker": "^25.0.1"
+  }
+}

@@ -1,0 +1,1854 @@
+import React, { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  Chip,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Link,
+  Alert,
+  AlertTitle,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import {
+  ExpandMore as ExpandMoreIcon,
+  Code as CodeIcon,
+  Architecture as ArchitectureIcon,
+  Security as SecurityIcon,
+  Speed as SpeedIcon,
+  Storage as StorageIcon,
+  Cloud as CloudIcon,
+  BugReport as BugReportIcon,
+  Rocket as RocketIcon,
+  School as SchoolIcon,
+  GitHub as GitHubIcon,
+  Article as ArticleIcon,
+  Build as BuildIcon,
+  Api as ApiIcon,
+  Dashboard as DashboardIcon,
+} from '@mui/icons-material';
+
+// Component to display architecture diagram with fallback
+const ArchitectureDiagramDisplay: React.FC = () => {
+  const navigate = useNavigate();
+  const [imageError, setImageError] = React.useState(false);
+
+  if (imageError) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <ArchitectureIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          Architecture Diagram
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          To display the architecture diagram, please add the image file to:
+        </Typography>
+        <Paper sx={{ 
+          p: 2, 
+          mb: 2, 
+          backgroundColor: 'background.default', 
+          fontFamily: 'monospace', 
+          fontSize: '0.875rem',
+          border: '1px solid',
+          borderColor: 'divider',
+          color: 'text.primary'
+        }}>
+          src/ui/web/public/architecture-diagram.png
+        </Paper>
+        <Button 
+          variant="outlined" 
+          startIcon={<ArchitectureIcon />}
+          onClick={() => navigate('/documentation/architecture')}
+          sx={{ mt: 1 }}
+        >
+          View Architecture Details
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      component="img"
+      src="/architecture-diagram.png"
+      alt="WarehouseOps AI System Architecture"
+      onError={() => setImageError(true)}
+      sx={{
+        maxWidth: '100%',
+        height: 'auto',
+        borderRadius: 1,
+        boxShadow: 3,
+        cursor: 'pointer',
+        '&:hover': {
+          opacity: 0.9,
+        },
+      }}
+      onClick={() => navigate('/documentation/architecture')}
+    />
+  );
+};
+
+const Documentation: React.FC = () => {
+  const navigate = useNavigate();
+  const [expandedSection, setExpandedSection] = useState<string | false>('overview');
+
+  const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpandedSection(isExpanded ? panel : false);
+  };
+
+  const quickStartSteps = [
+    {
+      step: 1,
+      title: "Environment Setup",
+      description: "Set up Python virtual environment and install dependencies",
+      code: "python -m venv env && source env/bin/activate && pip install -r requirements.txt"
+    },
+    {
+      step: 2,
+      title: "Database Configuration",
+      description: "Local SQLite and ChromaDB — no servers to configure",
+      code: "cp .env.example .env\n# Edit database credentials in .env"
+    },
+    {
+      step: 3,
+      title: "LLM inference Setup",
+      description: "Configure  API keys for LLM and embeddings",
+      code: "export GROQ_API_KEY=your_api_key\n# Or add to .env file"
+    },
+    {
+      step: 4,
+      title: "Start Services",
+      description: "Launch the application stack",
+      code: "./scripts/setup/dev_up.sh && ./scripts/start_server.sh"
+    },
+    {
+      step: 5,
+      title: "Jupyter Notebook Setup (Recommended)",
+      description: "Use the interactive setup guide for step-by-step setup",
+      code: "jupyter notebook notebooks/setup/complete_setup_guide.ipynb"
+    }
+  ];
+
+  const architectureComponents = [
+    {
+      name: "Multi-Agent System",
+      description: "Planner/Router + 5 Specialized Agents (Equipment, Operations, Safety, Forecasting, Document)",
+      status: "✅ Production Ready",
+      icon: <ArchitectureIcon />
+    },
+    {
+      name: "LLM inference Integration",
+      description: "Groq Llama 3.3 70B + local MiniLM embeddings",
+      status: "✅ Fully Operational",
+      icon: <CloudIcon />
+    },
+    {
+      name: "MCP Framework",
+      description: "Model Context Protocol with dynamic tool discovery and execution",
+      status: "✅ Production Ready",
+      icon: <BuildIcon />
+    },
+    {
+      name: "Chat Interface",
+      description: "Optimized with caching, deduplication, semantic routing, and performance monitoring",
+      status: "✅ Fully Optimized (Dec 2024)",
+      icon: <SpeedIcon />
+    },
+    {
+      name: "Parameter Validation",
+      description: "Comprehensive validation with business rules and warnings",
+      status: "✅ Implemented",
+      icon: <SecurityIcon />
+    },
+    {
+      name: "Hybrid RAG System",
+      description: "SQLite + ChromaDB vector search",
+      status: "✅ Optimized",
+      icon: <StorageIcon />
+    },
+    {
+      name: "Advanced Reasoning",
+      description: "5 reasoning types with confidence scoring",
+      status: "✅ Implemented",
+      icon: <SpeedIcon />
+    },
+    {
+      name: "Document Processing",
+      description: "6-stage the guardrails layer pipeline with Llama Groq Llama 3.3 70B vision model",
+      status: "✅ Production Ready",
+      icon: <ArticleIcon />
+    },
+    {
+      name: "Demand Forecasting",
+      description: "AI-powered forecasting with 6 ML models and optional GPU acceleration",
+      status: "✅ Production Ready",
+      icon: <SpeedIcon />
+    },
+    {
+      name: "NeMo Guardrails",
+      description: "Content safety, security, and compliance protection for LLM inputs/outputs",
+      status: "✅ Production Ready",
+      icon: <SecurityIcon />
+    },
+    {
+      name: "Security & RBAC",
+      description: "JWT authentication with 5 user roles",
+      status: "✅ Production Ready",
+      icon: <SecurityIcon />
+    }
+  ];
+
+  const apiEndpoints = [
+    {
+      category: "Core Chat",
+      endpoints: [
+        { method: "POST", path: "/api/v1/chat", description: "Main chat interface with agent routing, caching, and deduplication" },
+        { method: "POST", path: "/api/v1/chat/conversation/summary", description: "Get conversation summary" },
+        { method: "POST", path: "/api/v1/chat/conversation/search", description: "Search conversation history" },
+        { method: "DELETE", path: "/api/v1/chat/conversation/{session_id}", description: "Clear conversation history" },
+        { method: "POST", path: "/api/v1/chat/validate", description: "Validate chat response" },
+        { method: "GET", path: "/api/v1/chat/conversation/stats", description: "Get conversation statistics" },
+        { method: "GET", path: "/api/v1/health", description: "System health check" },
+        { method: "GET", path: "/api/v1/health/simple", description: "Simple health check" },
+        { method: "GET", path: "/api/v1/ready", description: "Readiness probe" },
+        { method: "GET", path: "/api/v1/live", description: "Liveness probe" },
+        { method: "GET", path: "/api/v1/version", description: "System version information" }
+      ]
+    },
+    {
+      category: "Agent Operations",
+      endpoints: [
+        { method: "GET", path: "/api/v1/equipment", description: "Get all equipment assets" },
+        { method: "GET", path: "/api/v1/equipment/{asset_id}", description: "Get equipment by ID" },
+        { method: "GET", path: "/api/v1/equipment/assignments", description: "Get equipment assignments" },
+        { method: "GET", path: "/api/v1/equipment/{asset_id}/telemetry", description: "Get equipment telemetry data" },
+        { method: "POST", path: "/api/v1/equipment/assign", description: "Assign equipment" },
+        { method: "POST", path: "/api/v1/equipment/release", description: "Release equipment" },
+        { method: "GET", path: "/api/v1/safety/incidents", description: "Get safety incidents" },
+        { method: "POST", path: "/api/v1/safety/incidents", description: "Create safety incident" },
+        { method: "GET", path: "/api/v1/safety/policies", description: "Get safety policies" }
+      ]
+    },
+    {
+      category: "MCP Framework",
+      endpoints: [
+        { method: "GET", path: "/api/v1/mcp/tools", description: "Discover available tools" },
+        { method: "POST", path: "/api/v1/mcp/tools/search", description: "Search tools by query" },
+        { method: "POST", path: "/api/v1/mcp/tools/execute", description: "Execute a specific tool (note: endpoint is /tools/execute)" },
+        { method: "GET", path: "/api/v1/mcp/status", description: "MCP system status" },
+        { method: "POST", path: "/api/v1/mcp/test-workflow", description: "Test MCP workflow execution" },
+        { method: "GET", path: "/api/v1/mcp/agents", description: "List MCP agents" },
+        { method: "POST", path: "/api/v1/mcp/discovery/refresh", description: "Refresh tool discovery" }
+      ]
+    },
+    {
+      category: "Document Processing",
+      endpoints: [
+        { method: "POST", path: "/api/v1/document/upload", description: "Upload document for processing" },
+        { method: "GET", path: "/api/v1/document/status/{document_id}", description: "Get processing status" },
+        { method: "GET", path: "/api/v1/document/results/{document_id}", description: "Get extraction results" },
+        { method: "POST", path: "/api/v1/document/search", description: "Search documents" },
+        { method: "POST", path: "/api/v1/document/validate/{document_id}", description: "Validate document extraction" },
+        { method: "POST", path: "/api/v1/document/approve/{document_id}", description: "Approve document" },
+        { method: "POST", path: "/api/v1/document/reject/{document_id}", description: "Reject document" },
+        { method: "GET", path: "/api/v1/document/analytics", description: "Document processing analytics" }
+      ]
+    },
+    {
+      category: "Reasoning Engine",
+      endpoints: [
+        { method: "POST", path: "/api/v1/reasoning/analyze", description: "Deep reasoning analysis" },
+        { method: "GET", path: "/api/v1/reasoning/types", description: "Available reasoning types" },
+        { method: "GET", path: "/api/v1/reasoning/insights/{session_id}", description: "Get reasoning insights for session" },
+        { method: "POST", path: "/api/v1/reasoning/chat-with-reasoning", description: "Chat with reasoning" }
+      ]
+    },
+    {
+      category: "Forecasting",
+      endpoints: [
+        { method: "GET", path: "/api/v1/forecasting/dashboard", description: "Forecasting dashboard and analytics" },
+        { method: "POST", path: "/api/v1/forecasting/real-time", description: "Real-time demand predictions" },
+        { method: "GET", path: "/api/v1/forecasting/reorder-recommendations", description: "AI-powered reorder recommendations" },
+        { method: "GET", path: "/api/v1/forecasting/model-performance", description: "Model performance metrics" },
+        { method: "GET", path: "/api/v1/forecasting/business-intelligence", description: "Business intelligence dashboard" },
+        { method: "GET", path: "/api/v1/forecasting/business-intelligence/enhanced", description: "Enhanced business intelligence dashboard" },
+        { method: "POST", path: "/api/v1/forecasting/batch-forecast", description: "Batch forecast for multiple SKUs" }
+      ]
+    },
+    {
+      category: "Training",
+      endpoints: [
+        { method: "POST", path: "/api/v1/training/start", description: "Start model training" },
+        { method: "GET", path: "/api/v1/training/status", description: "Get training status" },
+        { method: "POST", path: "/api/v1/training/stop", description: "Stop training" },
+        { method: "GET", path: "/api/v1/training/history", description: "Training history" },
+        { method: "POST", path: "/api/v1/training/schedule", description: "Schedule training" },
+        { method: "GET", path: "/api/v1/training/logs", description: "Get training logs" }
+      ]
+    }
+  ];
+
+  const toolsOverview = [
+    {
+      agent: "Equipment & Asset Operations",
+      count: 8,
+      tools: ["check_stock", "reserve_inventory", "create_replenishment_task", "generate_purchase_requisition", "adjust_reorder_point", "recommend_reslotting", "start_cycle_count", "investigate_discrepancy"]
+    },
+    {
+      agent: "Operations Coordination",
+      count: 8,
+      tools: ["assign_tasks", "rebalance_workload", "generate_pick_wave", "optimize_pick_paths", "manage_shift_schedule", "dock_scheduling", "dispatch_equipment", "publish_kpis"]
+    },
+    {
+      agent: "Safety & Compliance",
+      count: 7,
+      tools: ["log_incident", "start_checklist", "broadcast_alert", "lockout_tagout_request", "create_corrective_action", "retrieve_sds", "near_miss_capture"]
+    },
+    {
+      agent: "Forecasting Agent",
+      count: 6,
+      tools: ["get_forecast", "get_batch_forecast", "get_reorder_recommendations", "get_model_performance", "get_business_intelligence", "get_forecast_dashboard"]
+    },
+    {
+      agent: "Document Processing",
+      count: 4,
+      tools: ["upload_document", "get_document_status", "get_document_results", "get_document_analytics"]
+    }
+  ];
+
+  return (
+    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+          WarehouseOps AI
+        </Typography>
+        <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
+          Developer Guide & Implementation Documentation
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          A comprehensive guide for developers taking this reference architecture-aligned WarehouseOps AI to the next level.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+          <Chip label="Production Ready" color="success" />
+          <Chip label="LLM inference" color="primary" />
+          <Chip label="MCP Framework" color="secondary" />
+          <Chip label="5 Agents" color="info" />
+          <Chip label="Hybrid RAG" color="warning" />
+          <Chip label="NeMo Guardrails" color="error" />
+          <Chip label="GPU Accelerated" color="success" />
+        </Box>
+      </Box>
+
+      {/* Quick Start Alert */}
+      <Alert severity="info" sx={{ mb: 4 }}>
+        <AlertTitle>🚀 Quick Start</AlertTitle>
+        This system is production-ready with comprehensive documentation. Follow the quick start guide below to get up and running in minutes.
+      </Alert>
+
+      {/* Quick Start Section */}
+      <Accordion expanded={expandedSection === 'overview'} onChange={handleChange('overview')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <RocketIcon color="primary" />
+            Quick Start Guide
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={3}>
+            {quickStartSteps.map((step) => (
+              <Grid item xs={12} md={step.step === 5 ? 12 : 6} key={step.step}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Step {step.step}: {step.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {step.description}
+                    </Typography>
+                    <Paper sx={{ 
+                      p: 2, 
+                      backgroundColor: 'background.default', 
+                      fontFamily: 'monospace', 
+                      fontSize: '0.875rem',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      color: 'text.primary',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {step.code}
+                    </Paper>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Architecture Overview */}
+      <Accordion expanded={expandedSection === 'architecture'} onChange={handleChange('architecture')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ArchitectureIcon color="primary" />
+            System Architecture
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              🏗️ Complete System Architecture Diagram
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              The WarehouseOps AI operational assistant system architecture, showing all major components, 
+              data flows, and integrations. This diagram illustrates the complete system from user interaction through 
+              AI services, agent orchestration, data processing pipelines, and storage layers.
+            </Typography>
+            
+            {/* Architecture Diagram */}
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                p: 3, 
+                mb: 3, 
+                textAlign: 'center',
+                bgcolor: 'grey.50',
+                border: '2px solid',
+                borderColor: 'primary.main',
+                borderRadius: 2
+              }}
+            >
+              <ArchitectureDiagramDisplay />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                Complete system architecture showing user interfaces, AI services, agent orchestration, 
+                document processing pipeline, forecasting system, hybrid RAG, and data storage layers
+              </Typography>
+            </Paper>
+
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <AlertTitle>📋 Architecture Components</AlertTitle>
+              <Typography variant="body2">
+                The diagram above shows the complete system architecture including:
+              </Typography>
+              <List dense sx={{ mt: 1 }}>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="User Interaction Layer" 
+                    secondary="Frontend (Port 3001), API Gateway (Port 8001), Security (JWT, RBAC), MCP Integration Layer"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="AI Services - LLM inference" 
+                    secondary="Groq LLM (Llama 3.3 70B), local sentence-transformers embeddings (384-dim), NeMo Guardrails"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="Agent Orchestration" 
+                    secondary="Planner Agent, General Agent, Safety Agent, Document Extraction Agent, Forecasting Agent, Equipment Agent, Operations Agent, Memory Manager"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="Document Processing Pipeline" 
+                    secondary="Upload, text extraction, LLM field extraction, indexing, quality check, routing"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="Forecasting System" 
+                    secondary="Forecasting service, scikit-learn models (Random Forest, Gradient Boosting, Ridge, Linear), business intelligence, training pipeline, reorder recommendations"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="Hybrid RAG" 
+                    secondary="ChromaDB (vector search), SQLite (structured retrieval), hybrid ranker"
+                  />
+                </ListItem>
+                <ListItem sx={{ py: 0 }}>
+                  <ListItemText 
+                    primary="Data Storage" 
+                    secondary="SQLite, ChromaDB, optional Redis cache"
+                  />
+                </ListItem>
+              </List>
+            </Alert>
+
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <Button 
+                variant="contained" 
+                startIcon={<ArchitectureIcon />}
+                onClick={() => navigate('/documentation/architecture')}
+                size="large"
+              >
+                View Detailed Architecture Diagrams
+              </Button>
+            </Box>
+          </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            Component Details
+          </Typography>
+          <Grid container spacing={3}>
+            {architectureComponents.map((component, index) => (
+              <Grid item xs={12} md={6} key={index}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      {component.icon}
+                      <Typography variant="h6">{component.name}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {component.description}
+                    </Typography>
+                    <Chip 
+                      label={component.status} 
+                      color={component.status.includes('✅') ? 'success' : 'warning'}
+                      size="small"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Document Processing Pipeline */}
+      <Accordion expanded={expandedSection === 'document-processing'} onChange={handleChange('document-processing')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ArticleIcon color="primary" />
+            Document Processing Pipeline
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              📄 6-Stage Document Processing Pipeline
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              The system implements a comprehensive document processing pipeline using local models for warehouse document understanding, 
+              from PDF decomposition to intelligent routing based on quality scores.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Stage 1: Document Preprocessing
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Model:</strong> text extraction (the guardrails layer)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    PDF decomposition and image extraction with layout-aware processing for optimal document structure understanding.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Stage 2: Intelligent OCR
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Model:</strong> pdfplumber text extraction + Groq LLM
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fast, accurate text extraction with layout awareness, preserving spatial relationships and document structure.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%', bgcolor: 'success.light', color: 'success.contrastText' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Stage 3: Small LLM Processing ⭐
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Model:</strong> Llama Groq Llama 3.3 70B (the guardrails layer)
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Features:</strong>
+                  </Typography>
+                  <List dense>
+                    <ListItem sx={{ py: 0 }}>
+                      <ListItemText primary="Native vision understanding" />
+                    </ListItem>
+                    <ListItem sx={{ py: 0 }}>
+                      <ListItemText primary="OCRBench v2 leader for document understanding" />
+                    </ListItem>
+                    <ListItem sx={{ py: 0 }}>
+                      <ListItemText primary="Specialized for invoice/receipt/BOL processing" />
+                    </ListItem>
+                    <ListItem sx={{ py: 0 }}>
+                      <ListItemText primary="Fast inference (~100-200ms)" />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Stage 4: Embedding & Indexing
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Model:</strong> sentence-transformers/all-MiniLM-L6-v2 (local, 384-dim)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Vector embeddings generation for semantic search and intelligent document indexing with GPU acceleration.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Stage 5: Large LLM Judge
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>Model:</strong> Llama 3.3 70B (Groq)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Comprehensive quality validation with 4 evaluation criteria: completeness, accuracy, compliance, and quality scoring.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Stage 6: Intelligent Routing
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    <strong>System:</strong> Quality-based routing decisions
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Smart routing based on quality scores and business rules to determine document processing workflow and next actions.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              🔧 Technical Implementation Details
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>API Integration</Typography>
+                    <Typography variant="body2">the LLM inference API with automatic fallback to mock implementations for development</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Error Handling</Typography>
+                    <Typography variant="body2">Graceful degradation with comprehensive error recovery and retry mechanisms</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Performance</Typography>
+                    <Typography variant="body2">Optimized for warehouse document types with fast processing and high accuracy</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* NeMo Guardrails */}
+      <Accordion expanded={expandedSection === 'guardrails'} onChange={handleChange('guardrails')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SecurityIcon color="primary" />
+            NeMo Guardrails
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              🛡️ Content Safety & Compliance Protection
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              The system implements <strong>programmable guardrails</strong> with dual implementation support:
+              <strong> NeMo Guardrails SDK</strong> (with Colang) for intelligent validation and <strong>pattern-based matching</strong> 
+              as a fast fallback. All user inputs and AI responses are validated to ensure safe and compliant interactions.
+            </Typography>
+            <Alert severity="success" sx={{ mb: 3 }}>
+              <AlertTitle>✅ Production Ready</AlertTitle>
+              <Typography variant="body2">
+                • Dual implementation: SDK (Colang) + Pattern-based fallback<br/>
+                • 88 protection patterns across 5 categories<br/>
+                • Real-time input/output validation<br/>
+                • Automatic fallback on errors<br/>
+                • Comprehensive monitoring and metrics
+              </Typography>
+            </Alert>
+          </Box>
+
+          <Typography variant="h6" gutterBottom>
+            🔒 Protection Categories
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Jailbreak Detection (17 patterns)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Prevents attempts to override system instructions, roleplay, or bypass safety protocols.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Safety Violations (13 patterns)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Blocks unsafe operational guidance, equipment operation without training, and bypassing safety protocols.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Security Violations (15 patterns)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Prevents requests for security codes, access codes, restricted areas, and unauthorized access attempts.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Compliance Violations (12 patterns)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Ensures adherence to safety regulations, prevents skipping inspections, and blocks policy circumvention.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Off-Topic Queries (13 patterns)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Redirects non-warehouse related queries (weather, jokes, cooking, etc.) to warehouse operations topics.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Typography variant="h6" gutterBottom>
+            🔧 Implementation
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>NeMo Guardrails SDK</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Intelligent, programmable guardrails using 's official SDK with Colang configuration. 
+                    Enabled via <code>USE_NEMO_GUARDRAILS_SDK=true</code> environment variable.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Pattern-Based Fallback</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fast, lightweight keyword/phrase matching. Automatically used if SDK is unavailable or fails. 
+                    Ensures system continues to function reliably.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <AlertTitle>📖 Detailed Documentation</AlertTitle>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              For comprehensive documentation including configuration, API interface, monitoring, and troubleshooting, 
+              see the <Link href="https://github.com/-AI-Blueprints/WarehouseOps AI/blob/main/docs/architecture/guardrails-implementation.md" target="_blank" rel="noopener">Guardrails Implementation Guide</Link>.
+            </Typography>
+          </Alert>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Demand Forecasting System */}
+      <Accordion expanded={expandedSection === 'forecasting'} onChange={handleChange('forecasting')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SpeedIcon color="primary" />
+            Demand Forecasting System
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              📈 AI-Powered Demand Forecasting
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              The WarehouseOps AI features a <strong>complete AI-powered demand forecasting system</strong> 
+              with multi-model ensemble, advanced analytics, and real-time predictions. This system provides accurate 
+              demand forecasts to optimize inventory management and reduce stockouts.
+            </Typography>
+            <Alert severity="success" sx={{ mb: 3 }}>
+              <AlertTitle>✅ Production Ready</AlertTitle>
+              <Typography variant="body2">
+                • 100% Dynamic Database Integration - No hardcoded values<br/>
+                • Multi-Model Ensemble with 6 ML algorithms<br/>
+                • Real-Time Model Performance Tracking<br/>
+                • GPU Acceleration with optional GPU acceleration<br/>
+                • Automated Reorder Recommendations<br/>
+                • Business Intelligence Dashboard
+              </Typography>
+            </Alert>
+          </Box>
+
+          <Typography variant="h6" gutterBottom>
+            🤖 Machine Learning Models
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Random Forest
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 85% | <strong>MAPE:</strong> 12.5% | <strong>Status:</strong> HEALTHY
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Ensemble method using multiple decision trees for robust predictions with excellent handling of non-linear relationships.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    XGBoost (GPU-Accelerated)
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 82% | <strong>MAPE:</strong> 15.8% | <strong>Status:</strong> HEALTHY
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Advanced gradient boosting with GPU acceleration using optional GPU acceleration for high-performance forecasting.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Gradient Boosting
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 78% | <strong>MAPE:</strong> 14.2% | <strong>Status:</strong> WARNING
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Sequential ensemble method that builds models incrementally to minimize prediction errors.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Linear Regression
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 72% | <strong>MAPE:</strong> 18.7% | <strong>Status:</strong> NEEDS_RETRAINING
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Traditional linear model for baseline predictions and trend analysis in demand patterns.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Ridge Regression
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 75% | <strong>MAPE:</strong> 16.3% | <strong>Status:</strong> WARNING
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Regularized linear regression with L2 penalty to prevent overfitting and improve generalization.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Support Vector Regression
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Accuracy:</strong> 70% | <strong>MAPE:</strong> 20.1% | <strong>Status:</strong> NEEDS_RETRAINING
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Kernel-based regression method effective for non-linear patterns and high-dimensional data.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Typography variant="h6" gutterBottom>
+            🔧 Technical Architecture
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={4}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Feature Engineering</Typography>
+                  <Typography variant="body2">
+                    • Lag features (1-30 days)<br/>
+                    • Rolling statistics (7, 14, 30 days)<br/>
+                    • Seasonal patterns<br/>
+                    • Promotional impacts<br/>
+                    • Day-of-week effects
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Model Training</Typography>
+                  <Typography variant="body2">
+                    • Phase 1 & 2: Basic models<br/>
+                    • Phase 3: Advanced ensemble<br/>
+                    • Hyperparameter optimization<br/>
+                    • Time Series Cross-Validation<br/>
+                    • GPU acceleration ready
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Performance Tracking</Typography>
+                  <Typography variant="body2">
+                    • Real-time accuracy monitoring<br/>
+                    • MAPE calculation<br/>
+                    • Drift detection<br/>
+                    • Prediction counts<br/>
+                    • Status indicators
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Typography variant="h6" gutterBottom>
+            📊 API Endpoints
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Core Forecasting</Typography>
+                  <List dense>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="GET" size="small" color="success" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/forecasting/dashboard
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Comprehensive forecasting dashboard with model performance and business intelligence"
+                      />
+                    </ListItem>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="GET" size="small" color="success" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/forecasting/real-time
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Real-time demand predictions with confidence intervals"
+                      />
+                    </ListItem>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="GET" size="small" color="success" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/forecasting/model-performance
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Model health and performance metrics for all 6 models"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Training & Management</Typography>
+                  <List dense>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="GET" size="small" color="success" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/training/status
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Current training status and progress"
+                      />
+                    </ListItem>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="POST" size="small" color="primary" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/training/start
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Start manual training session"
+                      />
+                    </ListItem>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="GET" size="small" color="success" />
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              /api/v1/training/history
+                            </Typography>
+                          </Box>
+                        }
+                        secondary="Training session history and performance"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Typography variant="h6" gutterBottom>
+            🎯 Business Intelligence Features
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Automated Recommendations</Typography>
+                  <Typography variant="body2">
+                    • AI-suggested reorder quantities<br/>
+                    • Urgency levels (CRITICAL, HIGH, MEDIUM, LOW)<br/>
+                    • Confidence scores for each recommendation<br/>
+                    • Estimated arrival dates<br/>
+                    • Cost optimization suggestions
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom>Analytics Dashboard</Typography>
+                  <Typography variant="body2">
+                    • Model performance comparison<br/>
+                    • Forecast accuracy trends<br/>
+                    • SKU-specific demand patterns<br/>
+                    • Seasonal analysis<br/>
+                    • Inventory optimization insights
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Typography variant="h6" gutterBottom>
+            🚀 GPU Acceleration
+          </Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <AlertTitle>optional GPU acceleration Integration</AlertTitle>
+            <Typography variant="body2">
+              The forecasting system supports GPU acceleration using optional GPU acceleration for enterprise-scale performance. 
+              When GPU resources are available, models automatically utilize CUDA acceleration for faster training and inference.
+            </Typography>
+          </Alert>
+
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              📁 Key Files & Components
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Backend Components</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                      • src/api/routers/advanced_forecasting.py<br/>
+                      • src/api/routers/training.py<br/>
+                      • scripts/forecasting/phase1_phase2_forecasting_agent.py<br/>
+                      • scripts/forecasting/phase3_advanced_forecasting.py<br/>
+                      • Trains scikit-learn models on live demand history<br/>
+                      • scripts/setup/create_model_tracking_tables.sql
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Frontend Components</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                      • src/ui/web/src/pages/Forecasting.tsx<br/>
+                      • src/ui/web/src/services/forecastingAPI.ts<br/>
+                      • src/ui/web/src/services/trainingAPI.ts<br/>
+                      • Real-time progress tracking<br/>
+                      • Model performance visualization<br/>
+                      • Training management interface
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* API Reference */}
+      <Accordion expanded={expandedSection === 'api'} onChange={handleChange('api')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ApiIcon color="primary" />
+            API Reference
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={3}>
+            {apiEndpoints.map((category, index) => (
+              <Grid item xs={12} md={6} key={index}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {category.category}
+                    </Typography>
+                    <List dense>
+                      {category.endpoints.map((endpoint, epIndex) => (
+                        <ListItem key={epIndex} sx={{ px: 0 }}>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  label={endpoint.method} 
+                                  size="small" 
+                                  color={endpoint.method === 'GET' ? 'success' : 'primary'}
+                                />
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                  {endpoint.path}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={endpoint.description}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Agent Tools Overview */}
+      <Accordion expanded={expandedSection === 'tools'} onChange={handleChange('tools')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BuildIcon color="primary" />
+            Agent Tools Overview
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={3}>
+            {toolsOverview.map((agent, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {agent.agent}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {agent.count} Action Tools
+                    </Typography>
+                    <List dense>
+                      {agent.tools.map((tool, toolIndex) => (
+                        <ListItem key={toolIndex} sx={{ px: 0 }}>
+                          <ListItemIcon>
+                            <CodeIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={tool}
+                            primaryTypographyProps={{ variant: 'body2', sx: { fontFamily: 'monospace' } }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Implementation Journey */}
+      <Accordion expanded={expandedSection === 'journey'} onChange={handleChange('journey')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SchoolIcon color="primary" />
+            Implementation Journey & Next Steps
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              🎯 Current State: Production-Ready Foundation
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              This WarehouseOps AI represents a <strong>production-grade implementation</strong> of 's AI Blueprint architecture. 
+              We've successfully built a multi-agent system with comprehensive tooling, advanced reasoning capabilities, and enterprise-grade security.
+            </Typography>
+            <Alert severity="success" sx={{ mb: 3 }}>
+              <AlertTitle>✅ What's Complete</AlertTitle>
+              <Typography variant="body2">
+                • Multi-agent orchestration with LangGraph + MCP integration<br/>
+                • <strong>5 Specialized Agents:</strong> Equipment, Operations, Safety, Forecasting, Document<br/>
+                • <strong>34+ production-ready action tools</strong> across all agents<br/>
+                • LLM inference integration (Llama 3.3 Nemotron Super 49B + MiniLM + Vision models)<br/>
+                • <strong>Document Processing:</strong> 6-stage the guardrails layer pipeline with vision models<br/>
+                • <strong>Demand Forecasting:</strong> 6 ML models with optional GPU acceleration<br/>
+                • <strong>NeMo Guardrails:</strong> Content safety and compliance protection<br/>
+                • Advanced reasoning engine with 5 reasoning types<br/>
+                • Hybrid RAG system with SQLite + ChromaDB<br/>
+                • Real-time equipment telemetry and monitoring<br/>
+                • Automated reorder recommendations with AI-powered insights<br/>
+                • <strong>Chat System Optimizations (Dec 2024):</strong> Query caching, request deduplication, semantic routing, parallel tool execution, performance monitoring<br/>
+                • Complete security stack with JWT authentication + RBAC (5 user roles)<br/>
+                • Comprehensive monitoring with Prometheus/Grafana<br/>
+                • React frontend with Material-UI, message pagination, and real-time interfaces
+              </Typography>
+            </Alert>
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    🚀 Immediate Development Opportunities
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Complete MCP Adapter Migration" 
+                        secondary="Migrate remaining WMS, IoT, RFID/Barcode, and Time Attendance adapters to MCP framework"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="React Native Mobile App" 
+                        secondary="Build field operations app for warehouse workers with offline capabilities"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Enhanced Document Processing" 
+                        secondary="Add support for more document types and improve extraction accuracy"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Advanced Forecasting Features" 
+                        secondary="Add seasonal adjustments, promotional impact modeling, and multi-SKU optimization"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Real-Time Event Streaming" 
+                        secondary="Kafka integration for real-time data processing and event-driven architecture"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="secondary">
+                    🔧 Advanced Technical Enhancements
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <ListItemText 
+                        primary="ML-Powered Predictive Analytics" 
+                        secondary="Implement machine learning models for demand forecasting and optimization"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Real-time Event Streaming" 
+                        secondary="Kafka integration for real-time data processing and event-driven architecture"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Edge Computing Deployment" 
+                        secondary="Deploy lightweight agents to edge devices for local processing and reduced latency"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Multi-tenant Architecture" 
+                        secondary="Support multiple warehouse organizations with data isolation and custom configurations"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Advanced Security Features" 
+                        secondary="Implement zero-trust security, advanced threat detection, and compliance automation"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              🛠️ Development Roadmap
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Phase 1: Foundation</Typography>
+                    <Typography variant="body2">✅ Complete</Typography>
+                    <Typography variant="body2">Core architecture, agents, and MCP framework</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Phase 2: Optimization</Typography>
+                    <Typography variant="body2">✅ Complete</Typography>
+                    <Typography variant="body2">Chat interface, parameter validation, real tool execution</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Phase 3: Scale</Typography>
+                    <Typography variant="body2">📋 Planned</Typography>
+                    <Typography variant="body2">ML analytics, edge computing, multi-tenant</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Technical Deep Dive */}
+      <Accordion expanded={expandedSection === 'technical'} onChange={handleChange('technical')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CodeIcon color="primary" />
+            Technical Deep Dive
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              🏗️ Architecture Deep Dive
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              This system implements 's AI Blueprint architecture with several key innovations and production-ready patterns.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    🤖 Multi-Agent Architecture
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    The system uses LangGraph for orchestration with specialized agents:
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Planner/Router Agent" 
+                        secondary="Intent classification, context management, response synthesis, MCP tool routing"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Equipment & Asset Operations Agent" 
+                        secondary="8 tools for inventory, equipment, asset management, and telemetry monitoring"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Operations Coordination Agent" 
+                        secondary="8 tools for workforce, waves, scheduling, equipment dispatch, and KPIs"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Safety & Compliance Agent" 
+                        secondary="7 tools for incidents, checklists, alerts, compliance, and safety management"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Forecasting Agent" 
+                        secondary="6 tools for demand forecasting, reorder recommendations, model training, and analytics"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Document Processing Agent" 
+                        secondary="5 tools for document upload, OCR, structured extraction, validation, and routing"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    🔧 MCP Framework Innovation
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Our MCP implementation provides dynamic tool discovery and execution with recent optimizations:
+                  </Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Dynamic Tool Discovery" 
+                        secondary="Automatic registration and discovery of available tools"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Real Tool Execution" 
+                        secondary="All MCP tools now execute with actual database data"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Parameter Validation" 
+                        secondary="Comprehensive validation with business rules and helpful warnings"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Response Formatting" 
+                        secondary="Clean, professional responses without technical jargon"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="Error Handling" 
+                        secondary="Graceful error handling with actionable suggestions"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+            <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🚀 Recent System Optimizations (December 2024)
+            </Typography>
+            <Alert severity="success" sx={{ mb: 3 }}>
+              <AlertTitle>✅ Phase 1 & 2 Optimizations Complete</AlertTitle>
+              <Typography variant="body2">
+                Comprehensive performance and quality improvements implemented across the chat system, 
+                including data leakage fixes, caching, semantic routing, and performance monitoring.
+              </Typography>
+            </Alert>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Data Leakage Fix</Typography>
+                    <Typography variant="body2">Eliminated structured data leakage at source, reducing response cleaning by 95%</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Query Result Caching</Typography>
+                    <Typography variant="body2">In-memory cache with TTL for 50-90% latency reduction on repeated queries</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Message Pagination</Typography>
+                    <Typography variant="body2">Frontend pagination for improved performance with long conversations</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Parallel Tool Execution</Typography>
+                    <Typography variant="body2">50-80% reduction in tool execution time via concurrent processing</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Semantic Routing</Typography>
+                    <Typography variant="body2">Embedding-based intent classification for improved routing accuracy</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Request Deduplication</Typography>
+                    <Typography variant="body2">Prevents duplicate concurrent requests, reducing system load</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Performance Monitoring</Typography>
+                    <Typography variant="body2">Real-time metrics for latency, cache hits, errors, and routing distribution</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Response Cleaning Optimization</Typography>
+                    <Typography variant="body2">95% reduction in cleaning complexity with source-level fixes</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Parameter Validation</Typography>
+                    <Typography variant="body2">Comprehensive validation with business rules and helpful warnings</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🧠 Advanced Reasoning Engine
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={3}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Chain-of-Thought</Typography>
+                    <Typography variant="body2">Step-by-step reasoning with intermediate conclusions</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Multi-Hop Reasoning</Typography>
+                    <Typography variant="body2">Complex reasoning across multiple knowledge domains</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Scenario Analysis</Typography>
+                    <Typography variant="body2">What-if analysis and scenario planning</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Pattern Recognition</Typography>
+                    <Typography variant="body2">Learning from historical patterns and trends</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🗄️ Data Architecture
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>SQLite</Typography>
+                    <Typography variant="body2">Structured data with time-series capabilities for IoT telemetry</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>ChromaDB Vector DB</Typography>
+                    <Typography variant="body2">GPU-accelerated semantic search with  cuVS</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>Redis Cache</Typography>
+                    <Typography variant="body2">Session management and intelligent caching with LRU/LFU policies</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Resources */}
+      <Accordion expanded={expandedSection === 'resources'} onChange={handleChange('resources')}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ArticleIcon color="primary" />
+            Resources & Documentation
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    📚 Documentation
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <Button 
+                        variant="outlined" 
+                        fullWidth 
+                        startIcon={<BuildIcon />}
+                        onClick={() => navigate('/documentation/mcp-integration')}
+                        sx={{ mb: 1 }}
+                      >
+                        MCP Integration Guide
+                      </Button>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Complete MCP framework documentation with implementation phases, API reference, and best practices
+                      </Typography>
+                    </ListItem>
+                    <ListItem>
+                      <Button 
+                        variant="outlined" 
+                        fullWidth 
+                        startIcon={<ApiIcon />}
+                        onClick={() => navigate('/documentation/api-reference')}
+                        sx={{ mb: 1 }}
+                      >
+                        API Reference
+                      </Button>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Comprehensive API documentation with endpoints, request examples, and error handling
+                      </Typography>
+                    </ListItem>
+                    <ListItem>
+                      <Button 
+                        variant="outlined" 
+                        fullWidth 
+                        startIcon={<RocketIcon />}
+                        onClick={() => navigate('/documentation/deployment')}
+                        sx={{ mb: 1 }}
+                      >
+                        Deployment Guide
+                      </Button>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Production deployment instructions for Docker, Kubernetes, and Helm
+                      </Typography>
+                    </ListItem>
+                    <ListItem>
+                      <Button 
+                        variant="outlined" 
+                        fullWidth 
+                        startIcon={<ArchitectureIcon />}
+                        onClick={() => navigate('/documentation/architecture')}
+                        sx={{ mb: 1 }}
+                      >
+                        Architecture Diagrams
+                      </Button>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        System architecture and flow diagrams with component descriptions
+                      </Typography>
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    🔗 External Resources
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <ListItemText 
+                        primary="LLM inference Documentation" 
+                        secondary="Official the LLM inference API documentation"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="MCP Specification" 
+                        secondary="Model Context Protocol specification"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="LangGraph Documentation" 
+                        secondary="Multi-agent orchestration framework"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText 
+                        primary="FastAPI Documentation" 
+                        secondary="Modern Python web framework"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Footer */}
+      <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+        <Typography variant="body2" color="text.secondary" align="center">
+          WarehouseOps AI - Built with LLM inference, MCP Framework, NeMo Guardrails, and Modern Web Technologies
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
+            <Button 
+            variant="outlined" 
+            startIcon={<GitHubIcon />}
+            href="https://github.com/-AI-Blueprints/WarehouseOps AI"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View Source
+          </Button>
+          <Button variant="outlined" startIcon={<DashboardIcon />}>
+            Live Demo
+          </Button>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+export default Documentation;

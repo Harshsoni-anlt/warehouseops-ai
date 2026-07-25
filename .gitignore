@@ -1,0 +1,190 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Document uploads (user-uploaded files)
+data/uploads/
+!data/uploads/.gitkeep
+
+# Database
+*.db
+*.sqlite3
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/.cache/
+*.pack.old
+
+# React build
+ui/web/build/
+ui/mobile/android/app/build/
+ui/mobile/ios/build/
+
+# Docker
+# Note: .dockerignore should be committed to repo for Docker builds
+# .dockerignore
+*.bak
+docker-compose*.bak
+
+# Secrets and config
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.bak
+.env.backup
+.env.*.bak
+.env.*.backup
+secrets/
+*.pem
+*.key
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Runtime-generated files
+document_statuses.json
+phase1_phase2_forecasts.json
+rapids_gpu_forecasts.json
+historical_demand_summary.json
+
+# Test/demo output files (keep sample data but ignore generated results)
+data/sample/*_results.json
+data/sample/*_demo*.json
+data/sample/pipeline_test_results/
+data/sample/document_statuses.json
+
+# Build artifacts
+build-info.json
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+# Frontend coverage (Jest/LCOV)
+src/ui/web/coverage/
+*.lcov
+lcov.info
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Test files
+# Test files (allow our test files but ignore generated ones)
+test_*.py
+*_test.py
+!tests/test_*.py
+!tests/*_test.py
+!**/test_*.py
+!**/*_test.py
+!tests/test_basic.py
+
+# Documentation - Internal analysis files
+UNNECESSARY_FILES.md
+
+# local vector store + db
+data/chroma/
+data/warehouse.db*

@@ -1,0 +1,19 @@
+WarehouseOps AI
+Copyright 2026 Harsh Soni
+
+This product includes software developed as an adaptation of an open-source
+multi-agent warehouse-operations reference architecture originally published by
+NVIDIA Corporation under the Apache License, Version 2.0.
+
+The original work is Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES and is
+used and modified under the terms of the Apache License, Version 2.0 (see the
+LICENSE file). Substantial modifications have been made, including replacing the
+inference, vector-store, and database backends with free and open-source
+components (Groq / Ollama, sentence-transformers, ChromaDB, SQLite) and removing
+components that required proprietary or GPU infrastructure.
+
+Third-party components and their licenses are listed in LICENSE-3rd-party.txt.
+
+This NOTICE file is provided in accordance with Section 4 of the Apache License,
+Version 2.0. It is an attribution notice only and does not imply any endorsement
+by, or affiliation with, the original authors.
