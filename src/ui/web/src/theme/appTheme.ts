@@ -219,6 +219,7 @@ export const appTheme = createTheme({
     MuiListItemButton: {
       styleOverrides: {
         root: {
+          position: 'relative',
           borderRadius: 9, marginInline: 10, paddingBlock: 8, color: BODY, fontWeight: 500,
           transition: 'background-color .14s, color .14s',
           '& .MuiListItemIcon-root': { color: SLATE[400], minWidth: 34, transition: 'color .14s' },
@@ -228,6 +229,12 @@ export const appTheme = createTheme({
             '& .MuiListItemIcon-root': { color: PRIMARY },
             '& .MuiListItemText-primary': { fontWeight: 650 },
             '&:hover': { backgroundColor: BRAND[100] },
+            // active rail — the strongest, cheapest cue for "you are here"
+            '&::before': {
+              content: '""', position: 'absolute', left: -10, top: '50%',
+              transform: 'translateY(-50%)', width: 3, height: 20,
+              borderRadius: '0 3px 3px 0', backgroundColor: PRIMARY,
+            },
           },
         },
       },

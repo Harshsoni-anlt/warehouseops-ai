@@ -3,83 +3,12 @@ import {
   Box, Typography, Grid, Card, CardContent, Chip, Button, Stack, Divider, alpha,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import IsoWarehouse from '../components/IsoWarehouse';
 import {
   ForumOutlined, InsightsOutlined, PrecisionManufacturingOutlined,
   AssignmentTurnedInOutlined, HealthAndSafetyOutlined, DescriptionOutlined,
   HubOutlined, BoltOutlined, ArrowForwardRounded, UploadFileOutlined,
 } from '@mui/icons-material';
-
-/* ------------------------------------------------------------------ *
- *  Isometric warehouse — pure SVG so it renders instantly, scales
- *  crisply, and needs no WebGL. Gives the hero real depth.
- * ------------------------------------------------------------------ */
-const IsoWarehouse: React.FC = () => (
-  <Box component="svg" viewBox="0 0 460 360" sx={{ width: '100%', height: 'auto', display: 'block' }} aria-hidden>
-    <defs>
-      <linearGradient id="topFace" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#34D3A4" /><stop offset="100%" stopColor="#10B981" />
-      </linearGradient>
-      <linearGradient id="leftFace" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#059B6C" /><stop offset="100%" stopColor="#047A57" />
-      </linearGradient>
-      <linearGradient id="rightFace" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#047A57" /><stop offset="100%" stopColor="#065F46" />
-      </linearGradient>
-      <linearGradient id="slab" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#E7ECF2" /><stop offset="100%" stopColor="#CBD5E1" />
-      </linearGradient>
-      <radialGradient id="glow" cx="50%" cy="50%">
-        <stop offset="0%" stopColor="#10B981" stopOpacity=".22" />
-        <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-      </radialGradient>
-      <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="10" stdDeviation="12" floodColor="#0B1220" floodOpacity="0.13" />
-      </filter>
-    </defs>
-
-    <ellipse cx="230" cy="215" rx="205" ry="120" fill="url(#glow)" />
-
-    {/* floor slab */}
-    <g filter="url(#soft)">
-      <path d="M230 118 L410 214 L230 310 L50 214 Z" fill="url(#slab)" />
-      <path d="M230 118 L410 214 L230 310 L50 214 Z" fill="none" stroke="#B8C4D2" strokeWidth="1" />
-    </g>
-
-    {/* grid lines on the floor */}
-    <g stroke="#AEBBCB" strokeWidth=".7" opacity=".55">
-      <path d="M140 166 L320 262" /><path d="M185 142 L365 238" />
-      <path d="M320 166 L140 262" /><path d="M275 142 L95 238" />
-    </g>
-
-    {/* a stacked pallet: three faces = real dimension */}
-    {[
-      { x: 230, y: 96,  s: 1.0,  o: 1 },
-      { x: 152, y: 140, s: 0.82, o: 0.96 },
-      { x: 308, y: 140, s: 0.82, o: 0.96 },
-      { x: 230, y: 176, s: 0.7,  o: 0.9 },
-    ].map((b, i) => {
-      const w = 54 * b.s, h = 30 * b.s, d = 26 * b.s;
-      return (
-        <g key={i} opacity={b.o}>
-          <path d={`M${b.x} ${b.y} L${b.x + w} ${b.y + h} L${b.x} ${b.y + 2 * h} L${b.x - w} ${b.y + h} Z`} fill="url(#topFace)" />
-          <path d={`M${b.x - w} ${b.y + h} L${b.x} ${b.y + 2 * h} L${b.x} ${b.y + 2 * h + d} L${b.x - w} ${b.y + h + d} Z`} fill="url(#leftFace)" />
-          <path d={`M${b.x + w} ${b.y + h} L${b.x} ${b.y + 2 * h} L${b.x} ${b.y + 2 * h + d} L${b.x + w} ${b.y + h + d} Z`} fill="url(#rightFace)" />
-        </g>
-      );
-    })}
-
-    {/* floating "agent" nodes with connectors */}
-    <g>
-      {[[96, 96], [372, 108], [400, 176]].map(([cx, cy], i) => (
-        <g key={i}>
-          <line x1={cx} y1={cy} x2="230" y2="150" stroke="#10B981" strokeWidth="1.1" strokeDasharray="3 4" opacity=".55" />
-          <circle cx={cx} cy={cy} r="13" fill="#FFFFFF" stroke="#A7F3D6" strokeWidth="1.5" />
-          <circle cx={cx} cy={cy} r="4.5" fill="#10B981" />
-        </g>
-      ))}
-    </g>
-  </Box>
-);
 
 const capabilities = [
   { icon: <ForumOutlined />, title: 'Ask the assistant', to: '/chat',
@@ -97,11 +26,32 @@ const capabilities = [
 ];
 
 const stats = [
-  { value: '16', label: 'inventory SKUs', hint: 'Real product catalog with locations and reorder points' },
-  { value: '180', label: 'days of demand', hint: '~3,300 movements with weekday and seasonal patterns' },
-  { value: '12', label: 'equipment assets', hint: 'Forklifts, AMRs, AGVs, chargers, conveyors' },
-  { value: '18', label: 'MCP tools', hint: 'Discoverable agent actions over Model Context Protocol' },
+  { value: '16',  label: 'inventory SKUs',   hint: 'Real product catalog with locations and reorder points', spark: [6, 9, 7, 11, 9, 13, 12] },
+  { value: '180', label: 'days of demand',   hint: '~3,300 movements with weekday and seasonal patterns',    spark: [4, 7, 6, 10, 8, 12, 15] },
+  { value: '12',  label: 'equipment assets', hint: 'Forklifts, AMRs, AGVs, chargers, conveyors',              spark: [8, 8, 10, 9, 11, 10, 12] },
+  { value: '18',  label: 'MCP tools',        hint: 'Discoverable agent actions over Model Context Protocol',  spark: [2, 5, 6, 9, 12, 14, 16] },
 ];
+
+/** Tiny inline sparkline — signals "this is live data", costs nothing. */
+const Spark: React.FC<{ points: number[] }> = ({ points }) => {
+  const w = 72, h = 22, max = Math.max(...points), min = Math.min(...points);
+  const d = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * w;
+    const y = h - ((p - min) / Math.max(1, max - min)) * (h - 4) - 2;
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return (
+    <Box component="svg" viewBox={`0 0 ${w} ${h}`} sx={{ width: w, height: h, overflow: 'visible' }} aria-hidden>
+      <path d={`${d} L${w},${h} L0,${h} Z`} fill="url(#sparkFill)" opacity=".18" />
+      <path d={d} fill="none" stroke="#10B981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10B981" /><stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </Box>
+  );
+};
 
 const flow = [
   ['You ask', 'plain language'],
@@ -170,11 +120,24 @@ const Overview: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 5 }}>
         {stats.map(s => (
           <Grid item xs={6} md={3} key={s.label}>
-            <Card sx={{ height: '100%', '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' } }}>
+            <Card
+              sx={{
+                height: '100%', position: 'relative', overflow: 'hidden',
+                '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+                // accent edge — ties the card to the brand without flooding it
+                '&::before': {
+                  content: '""', position: 'absolute', insetInline: 0, top: 0, height: 3,
+                  background: 'linear-gradient(90deg,#34D3A4,#10B981 40%,transparent)',
+                },
+              }}
+            >
               <CardContent>
-                <Typography sx={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: 'primary.dark' }} className="tabular">
-                  {s.value}
-                </Typography>
+                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                  <Typography sx={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: 'primary.dark' }} className="tabular">
+                    {s.value}
+                  </Typography>
+                  <Spark points={s.spark} />
+                </Stack>
                 <Typography variant="subtitle2" sx={{ mt: 0.75, mb: 1, color: 'text.primary' }}>{s.label}</Typography>
                 <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{s.hint}</Typography>
               </CardContent>
