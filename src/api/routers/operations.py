@@ -50,6 +50,55 @@ class TaskUpdate(BaseModel):
     payload: Optional[dict] = None
 
 
+_TASK_COLUMNS = "id, kind, status, assignee, payload, created_at, updated_at"
+
+
+async def _fetch_task(task_id: int) -> Optional[dict]:
+    """Read one task row.
+
+    Both call sites previously did `TaskQueries().get_task_by_id(...)`, but
+    TaskQueries requires a retriever in its constructor and has no such method —
+    so every GET /tasks/{id} and PUT /tasks/{id} raised TypeError and returned
+    500. Nothing caught it because the handler swallows Exception.
+    """
+    return await sql_retriever.fetch_one(
+        f"SELECT {_TASK_COLUMNS} FROM tasks WHERE id = $1", task_id
+    )
+
+
+def _to_task(row: dict) -> "Task":
+    """Build a Task from a database row.
+
+    SQLite stores `payload` as TEXT, so it comes back as a JSON string while the
+    model declares a dict. Four call sites each did (or forgot) this conversion
+    separately — creating a task returned 500 because one of them passed the
+    raw string straight to pydantic. One helper, used everywhere.
+    """
+    import json
+
+    payload = row.get("payload")
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except (json.JSONDecodeError, TypeError):
+            payload = {}
+    elif payload is None:
+        payload = {}
+
+    def _iso(v):
+        return v.isoformat() if hasattr(v, "isoformat") else (v or "")
+
+    return Task(
+        id=row["id"],
+        kind=row["kind"],
+        status=row["status"],
+        assignee=row.get("assignee"),
+        payload=payload,
+        created_at=_iso(row.get("created_at")),
+        updated_at=_iso(row.get("updated_at")),
+    )
+
+
 class WorkforceStatus(BaseModel):
     total_workers: int
     active_workers: int
@@ -111,22 +160,14 @@ async def get_task(task_id: int):
     """Get a specific task by ID."""
     try:
         await sql_retriever.initialize()
-        task = await TaskQueries().get_task_by_id(sql_retriever, task_id)
+        task = await _fetch_task(task_id)
 
         if not task:
             raise HTTPException(
                 status_code=404, detail=f"Task with ID {task_id} not found"
             )
 
-        return Task(
-            id=task["id"],
-            kind=task["kind"],
-            status=task["status"],
-            assignee=task["assignee"],
-            payload=task["payload"] if task["payload"] else {},
-            created_at=task["created_at"].isoformat() if task["created_at"] else "",
-            updated_at=task["updated_at"].isoformat() if task["updated_at"] else "",
-        )
+        return _to_task(task)
     except HTTPException:
         raise
     except Exception as e:
@@ -150,15 +191,7 @@ async def create_task(task: TaskCreate):
             query, task.kind, task.status, task.assignee, json.dumps(task.payload)
         )
 
-        return Task(
-            id=result["id"],
-            kind=result["kind"],
-            status=result["status"],
-            assignee=result["assignee"],
-            payload=result["payload"] if result["payload"] else {},
-            created_at=result["created_at"].isoformat() if result["created_at"] else "",
-            updated_at=result["updated_at"].isoformat() if result["updated_at"] else "",
-        )
+        return _to_task(result)
     except Exception as e:
         logger.error(f"Failed to create task: {e}")
         raise HTTPException(status_code=500, detail="Failed to create task")
@@ -171,7 +204,7 @@ async def update_task(task_id: int, update: TaskUpdate):
         await sql_retriever.initialize()
 
         # Get current task
-        current_task = await task_queries.get_task_by_id(sql_retriever, task_id)
+        current_task = await _fetch_task(task_id)
         if not current_task:
             raise HTTPException(
                 status_code=404, detail=f"Task with ID {task_id} not found"
@@ -204,15 +237,7 @@ async def update_task(task_id: int, update: TaskUpdate):
             query, status, assignee, payload, task_id
         )
 
-        return Task(
-            id=result["id"],
-            kind=result["kind"],
-            status=result["status"],
-            assignee=result["assignee"],
-            payload=result["payload"] if result["payload"] else {},
-            created_at=result["created_at"].isoformat() if result["created_at"] else "",
-            updated_at=result["updated_at"].isoformat() if result["updated_at"] else "",
-        )
+        return _to_task(result)
     except HTTPException:
         raise
     except Exception as e:
@@ -236,23 +261,7 @@ async def assign_task(task_id: int, assignee: str = Body(..., embed=True)):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        payload = task["payload"]
-        if isinstance(payload, str):
-            import json
-            try:
-                payload = json.loads(payload)
-            except json.JSONDecodeError:
-                payload = {}
-        elif payload is None:
-            payload = {}
-
-        def _iso(v):
-            return v.isoformat() if hasattr(v, "isoformat") else (v or "")
-
-        return Task(
-            id=task["id"], kind=task["kind"], status=task["status"], assignee=task["assignee"],
-            payload=payload, created_at=_iso(task["created_at"]), updated_at=_iso(task["updated_at"]),
-        )
+        return _to_task(task)
     except HTTPException:
         raise
     except Exception as e:

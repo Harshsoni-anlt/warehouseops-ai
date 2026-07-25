@@ -337,6 +337,11 @@ class SQLRetriever:
                 cur = await self._conn.execute(q, p)
                 row = await cur.fetchone()
                 await cur.close()
+                # `INSERT ... RETURNING` is a write, and callers reasonably use
+                # fetch_one for it. Without this the row was never committed and
+                # silently vanished on the next connection.
+                if self._conn.in_transaction:
+                    await self._conn.commit()
             return _coerce_row(dict(row)) if row else None
         except Exception as e:
             logger.error(f"Fetch one failed: {e}")
