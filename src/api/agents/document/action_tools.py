@@ -878,6 +878,7 @@ class DocumentActionTools:
                 "success": True,
                 "document_id": document_id,
                 "extracted_data": extraction_data["extraction_results"],
+                "extracted_fields": extraction_data.get("extracted_fields", {}),
                 "confidence_scores": extraction_data.get("confidence_scores", {}),
                 "processing_stages": extraction_data.get("stages", []),
                 "quality_score": extraction_data.get("quality_score"),
@@ -1591,8 +1592,36 @@ class DocumentActionTools:
                             ),
                         )
 
+                    # Flatten the fields the UI actually displays.
+                    #
+                    # Only the database path built `extracted_fields`, and the
+                    # extraction_results table is never written — so this dict
+                    # was always empty and the Documents page showed a document
+                    # that had genuinely been read (20k chars, vendor, dates)
+                    # as if nothing had been extracted.
+                    extracted_fields: Dict[str, Any] = {}
+                    llm_fields = results.get("llm_processing", {}) or {}
+                    structured = llm_fields.get("structured_data") or {}
+                    if isinstance(structured, dict):
+                        for k, v in structured.items():
+                            # The pipeline writes fields flat; older payloads
+                            # nested them under {"value": ..., "confidence": ...}
+                            if isinstance(v, dict) and "value" in v:
+                                extracted_fields[k] = v["value"]
+                            elif v not in (None, "", [], {}):
+                                extracted_fields[k] = v
+                    ocr_block = results.get("ocr", {}) or {}
+                    if ocr_block.get("text"):
+                        extracted_fields["extracted_text"] = ocr_block["text"]
+                    pre = results.get("preprocessing", {}) or {}
+                    if pre.get("chars") is not None:
+                        extracted_fields["character_count"] = pre["chars"]
+                    if pre.get("pages") is not None:
+                        extracted_fields["total_pages"] = pre["pages"]
+
                     return {
                         "extraction_results": extraction_results,
+                        "extracted_fields": extracted_fields,
                         "confidence_scores": {
                             "overall": (
                                 quality_score.overall_score / 5.0

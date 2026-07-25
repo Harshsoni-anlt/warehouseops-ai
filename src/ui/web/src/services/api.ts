@@ -547,6 +547,12 @@ export const documentAPI = {
     return response.data;
   },
   
+  /** Every uploaded document with its current state. */
+  listDocuments: async (): Promise<{ total: number; documents: any[] }> => {
+    const response = await api.get('/document');
+    return response.data;
+  },
+
   getDocumentStatus: async (documentId: string): Promise<any> => {
     const safeId = validatePathParam(documentId, 'documentId');
     const response = await api.get(`/document/status/${safeId}`);

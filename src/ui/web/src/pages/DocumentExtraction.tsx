@@ -141,10 +141,51 @@ const DocumentExtraction: React.FC = () => {
     });
   };
 
-  // Load analytics data when component mounts
+  // Load analytics AND the document list when the component mounts.
+  //
+  // Documents used to live only in React state, so the backend could hold nine
+  // fully processed documents while this page showed an empty screen the moment
+  // it was reloaded or the tab was changed. Everything now comes from the server.
   useEffect(() => {
     loadAnalyticsData();
+    loadDocuments();
   }, []);
+
+  const loadDocuments = async () => {
+    try {
+      const { documents = [] } = await documentAPI.listDocuments();
+
+      const toItem = (d: any): DocumentItem => ({
+        id: d.document_id,
+        filename: d.filename,
+        status: d.status,
+        uploadTime: d.uploaded_at ? new Date(d.uploaded_at) : new Date(),
+        progress: d.progress ?? 0,
+        stages: [],
+        qualityScore: d.quality_score ?? undefined,
+        routingDecision: d.error_message || d.summary || d.current_stage,
+        extractedData: {
+          vendor: d.vendor,
+          document_date: d.document_date,
+          summary: d.summary,
+          character_count: d.character_count,
+          error_message: d.error_message,
+        },
+      });
+
+      const done = documents
+        .filter((d: any) => d.status === 'completed' || d.status === 'failed')
+        .map(toItem);
+      const inFlight = documents
+        .filter((d: any) => d.status !== 'completed' && d.status !== 'failed')
+        .map(toItem);
+
+      setCompletedDocuments(done);
+      setProcessingDocuments(inFlight);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    }
+  };
 
   const loadAnalyticsData = async () => {
     try {
@@ -1082,167 +1123,136 @@ const DocumentExtraction: React.FC = () => {
   );
 
   const CompletedDocumentCard = ({ document }: { document: DocumentItem }) => {
+    // One card per processed document. The previous version pushed the whole
+    // one-sentence summary into a Chip beside the filename, which forced the
+    // name to wrap over four lines and truncated the summary anyway. Facts the
+    // pipeline actually produced — vendor, date, characters read — were not
+    // shown at all, and a failed document looked identical to a successful one.
+    const failed = document.status === 'failed';
+    const data = document.extractedData || {};
     const qualityScore = document.qualityScore || 0;
-    const qualityPercentage = (qualityScore / 5.0) * 100;
-    
+    const qualityPct = Math.round((qualityScore / 5.0) * 100);
+
+    const facts: Array<[string, string]> = [];
+    if (data.vendor) facts.push(['Vendor', String(data.vendor)]);
+    if (data.document_date) facts.push(['Date', String(data.document_date)]);
+    if (typeof data.character_count === 'number') {
+      facts.push(['Text read', `${data.character_count.toLocaleString()} chars`]);
+    }
+
     return (
       <Card
+        variant="outlined"
         sx={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E6E9EF',
-          transition: 'all 0.2s ease-in-out',
+          height: '100%',
+          borderRadius: 2,
+          transition: 'border-color .15s, box-shadow .15s',
           '&:hover': {
-            borderColor: '#0D9488',
-            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.15)',
+            borderColor: failed ? 'error.light' : 'primary.main',
+            boxShadow: '0 4px 14px rgba(15,23,42,.06)',
           },
         }}
       >
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography 
-              variant="h6"
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {/* Title row: name gets the space, status is a short chip */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+            <Typography
+              variant="subtitle1"
+              title={document.filename}
               sx={{
                 fontWeight: 600,
-                fontSize: '1.125rem',
-                color: '#0F172A',
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
               {document.filename}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip 
-                label="Completed" 
-                size="small"
-                sx={{
-                  backgroundColor: '#3FB950',
-                  color: '#000000',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                }}
-              />
-              <Chip 
-                label={document.routingDecision || "Auto-Approved"} 
-                size="small"
-                sx={{
-                  backgroundColor: '#0D9488',
-                  color: '#000000',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                }}
-              />
-            </Box>
+            <Chip
+              size="small"
+              label={failed ? 'Failed' : 'Completed'}
+              color={failed ? 'error' : 'success'}
+              variant={failed ? 'filled' : 'outlined'}
+              sx={{ height: 22, fontSize: 11, fontWeight: 600 }}
+            />
           </Box>
-          
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#64748B',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Quality Score:
+
+          {failed ? (
+            <Alert severity="error" sx={{ py: 0.5 }}>
+              <Typography variant="caption">
+                {data.error_message || 'Processing failed. No reason was recorded.'}
               </Typography>
-              <Box
-                sx={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 56,
-                  height: 56,
-                }}
-              >
-                <CircularProgress
-                  variant="determinate"
-                  value={qualityPercentage}
-                  size={56}
-                  thickness={4}
-                  sx={{
-                    color: qualityPercentage >= 80 ? '#3FB950' : qualityPercentage >= 60 ? '#0D9488' : '#D29922',
-                    position: 'absolute',
-                  }}
-                />
-                <Box
-                  sx={{
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    right: 0,
-                    position: 'absolute',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    component="div"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      color: '#0F172A',
-                    }}
-                  >
-                    {qualityPercentage.toFixed(0)}%
-                  </Typography>
+            </Alert>
+          ) : (
+            <>
+              {data.summary && (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {data.summary}
+                </Typography>
+              )}
+
+              {facts.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  {facts.map(([k, v]) => (
+                    <Box key={k}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
+                        {k}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {v}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
+              )}
+
+              {/* Quality as a bar, not a donut — it is one number out of five */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', minWidth: 52 }}>
+                  Quality
+                </Typography>
+                <Box sx={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: 'action.hover' }}>
+                  <Box
+                    sx={{
+                      width: `${qualityPct}%`,
+                      height: '100%',
+                      borderRadius: 3,
+                      backgroundColor:
+                        qualityPct >= 80 ? 'success.main' : qualityPct >= 50 ? 'warning.main' : 'error.main',
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {qualityScore.toFixed(1)}/5.0
+                </Typography>
               </Box>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#64748B',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {document.qualityScore ? `${document.qualityScore}/5.0` : 'N/A'}
-              </Typography>
-            </Box>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: '#64748B',
-                fontSize: '0.875rem',
-              }}
-            >
-              Processing Time: {document.processingTime ? `${document.processingTime}s` : 'N/A'}
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button 
-              size="small" 
+            </>
+          )}
+
+          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+            <Button
+              size="small"
               startIcon={<ViewIcon />}
               onClick={() => handleViewResults(document)}
               variant="contained"
-              sx={{
-                backgroundColor: '#0D9488',
-                color: '#000000',
-                fontWeight: 500,
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: '#14B8A6',
-                },
-              }}
+              disableElevation
+              sx={{ textTransform: 'none' }}
             >
-              View Results
+              View results
             </Button>
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               startIcon={<DownloadIcon />}
               variant="outlined"
-              sx={{
-                borderColor: '#E6E9EF',
-                color: '#0F172A',
-                textTransform: 'none',
-                '&:hover': {
-                  borderColor: '#0D9488',
-                  backgroundColor: 'rgba(13, 148, 136, 0.1)',
-                },
-              }}
+              sx={{ textTransform: 'none' }}
+              onClick={() => window.open(`/api/v1/document/results/${document.id}`, '_blank')}
             >
-              Download
+              Raw JSON
             </Button>
           </Box>
         </CardContent>
@@ -1667,7 +1677,13 @@ const DocumentExtraction: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Total Pages:</strong> {documentResults.extracted_data?.total_pages || 'N/A'}
+                        <strong>Pages:</strong>{' '}
+                        {documentResults.extracted_data?.total_pages
+                          ? `${documentResults.extracted_data.total_pages}`
+                          : '—'}
+                        {documentResults.extracted_data?.character_count
+                          ? ` · ${Number(documentResults.extracted_data.character_count).toLocaleString()} characters read`
+                          : ''}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -1726,6 +1742,116 @@ const DocumentExtraction: React.FC = () => {
                 </Box>
               ) : documentResults && documentResults.extracted_data && Object.keys(documentResults.extracted_data).length > 0 ? (
                 <>
+                  {/* Extracted fields — the actual point of the pipeline.
+                      These were parsed by the LLM and stored, but the dialog
+                      only ever showed the raw text, so the reader never saw
+                      that vendor, date and line items had been identified. */}
+                  {(() => {
+                    const fields =
+                      documentResults.extracted_data ||
+                      documentResults.processing_summary?.extracted_fields ||
+                      {};
+                    // Only show real extracted values. Bulk/plumbing keys are
+                    // rendered elsewhere (or not at all) — extraction_results in
+                    // particular is the entire stage payload and dumped several
+                    // thousand characters of raw JSON into the panel.
+                    const HIDE = new Set([
+                      'extracted_text', 'text', 'character_count', 'total_pages',
+                      'structured_data', 'extraction_results', 'entities',
+                      'raw_response', 'processing_stages', 'confidence_scores',
+                      'quality_assessment', 'note',
+                    ]);
+                    const entries = Object.entries(fields).filter(([k, v]) => {
+                      if (HIDE.has(k)) return false;
+                      if (v === null || v === undefined || v === '') return false;
+                      if (Array.isArray(v)) return k === 'line_items' && v.length > 0;
+                      if (typeof v === 'object') return false;   // no JSON blobs
+                      return String(v).length < 400;             // no walls of text
+                    });
+                    if (entries.length === 0) return null;
+
+                    const lineItems = fields.line_items;
+                    const scalars = entries.filter(([k]) => k !== 'line_items');
+
+                    const pretty = (k: string) =>
+                      k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+                    return (
+                      <Card variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            Extracted fields
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {scalars.map(([k, v]) => (
+                              <Grid item xs={12} sm={6} md={4} key={k}>
+                                <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
+                                  {pretty(k)}
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
+                                  {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                                </Typography>
+                              </Grid>
+                            ))}
+                          </Grid>
+
+                          {Array.isArray(lineItems) && lineItems.length > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                                Line items
+                              </Typography>
+                              <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', mt: 0.5 }}>
+                                <thead>
+                                  <tr>
+                                    {['Description', 'Quantity', 'Amount'].map((h) => (
+                                      <Box
+                                        component="th"
+                                        key={h}
+                                        sx={{
+                                          textAlign: h === 'Description' ? 'left' : 'right',
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          color: 'text.secondary',
+                                          borderBottom: '1px solid',
+                                          borderColor: 'divider',
+                                          py: 0.75,
+                                        }}
+                                      >
+                                        {h}
+                                      </Box>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {lineItems.slice(0, 25).map((li: any, i: number) => (
+                                    <tr key={i}>
+                                      {['description', 'quantity', 'amount'].map((f) => (
+                                        <Box
+                                          component="td"
+                                          key={f}
+                                          sx={{
+                                            textAlign: f === 'description' ? 'left' : 'right',
+                                            fontSize: 13,
+                                            py: 0.75,
+                                            borderBottom: '1px solid',
+                                            borderColor: 'divider',
+                                            fontVariantNumeric: 'tabular-nums',
+                                          }}
+                                        >
+                                          {li?.[f] ?? '—'}
+                                        </Box>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Box>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
                   {/* Extracted Text */}
                   {(documentResults.extracted_data.extracted_text || documentResults.extracted_data.text) && (
                     <Card sx={{ mb: 3 }}>
@@ -1746,17 +1872,16 @@ const DocumentExtraction: React.FC = () => {
                             {documentResults.extracted_data.extracted_text || documentResults.extracted_data.text}
                           </Typography>
                         </Box>
-                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Confidence: 
-                          </Typography>
-                          <Chip 
-                            label={`${Math.round((documentResults.confidence_scores?.extracted_text || documentResults.confidence_scores?.text || 0) * 100)}%`}
-                            color={(documentResults.confidence_scores?.extracted_text || documentResults.confidence_scores?.text || 0) >= 0.8 ? 'success' : (documentResults.confidence_scores?.extracted_text || documentResults.confidence_scores?.text || 0) >= 0.6 ? 'warning' : 'error'}
-                            size="small"
-                            sx={{ ml: 1 }}
-                          />
-                        </Box>
+                        {/* This used to show "Confidence: 0%" beside perfectly
+                            extracted text — pdfplumber reads characters, it does
+                            not score them, so the number was always zero and read
+                            as a failure. Report what is actually known instead. */}
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                          Read by pdfplumber
+                          {documentResults.extracted_data?.character_count
+                            ? ` · ${Number(documentResults.extracted_data.character_count).toLocaleString()} characters`
+                            : ''}
+                        </Typography>
                       </CardContent>
                     </Card>
                   )}

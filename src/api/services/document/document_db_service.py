@@ -222,20 +222,49 @@ class DocumentDBService:
             """
             stages = await self.db.execute_query(stages_query, (str(document_id),))
             
-            # Calculate progress
+            # Calculate progress.
+            #
+            # processing_stages rows are only written by the legacy pipeline, so
+            # for documents processed by the current one there are none — which
+            # made this return 0% for a finished document and left the UI
+            # polling forever. Fall back to the document's own status.
+            doc_status = str(doc.get("status") or "").lower()
             total_stages = len(stages)
             completed_stages = sum(1 for s in stages if s.get("status") == "completed")
-            progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
-            
+
+            # The document's own status wins when it is terminal. The
+            # processing_stages rows are written once at upload and only
+            # advanced by the legacy pipeline, so a finished document still had
+            # every stage row sitting at 'pending' — reported as
+            # "Preprocessing 0%" for a document that was already complete.
+            if doc_status in ("completed", "failed"):
+                progress = 100 if doc_status == "completed" else 0
+            elif total_stages > 0 and completed_stages > 0:
+                progress = int(completed_stages / total_stages * 100)
+            else:
+                progress = {
+                    "uploaded": 5,
+                    "preprocessing": 25,
+                    "ocr_extraction": 50,
+                    "llm_processing": 75,
+                    "validation": 90,
+                    "routing": 95,
+                    "completed": 100,
+                    "failed": 0,
+                }.get(doc_status, 0)
+
             # Determine current stage
-            current_stage = "Preprocessing"
-            for stage in stages:
-                if stage.get("status") == "processing":
-                    current_stage = stage.get("stage_name", "Preprocessing").replace("_", " ").title()
-                    break
-                elif stage.get("status") == "pending":
-                    current_stage = stage.get("stage_name", "Preprocessing").replace("_", " ").title()
-                    break
+            current_stage = None
+            if doc_status in ("completed", "failed"):
+                current_stage = doc_status.title()
+            else:
+                for stage in stages:
+                    if stage.get("status") == "processing":
+                        current_stage = stage.get("stage_name", "").replace("_", " ").title()
+                        break
+            if not current_stage:
+                stage_name = doc.get("processing_stage") or doc.get("status") or "preprocessing"
+                current_stage = str(stage_name).replace("_", " ").title()
             
             # Parse JSONB metadata fields if they're strings
             def parse_jsonb_field(value):

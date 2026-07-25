@@ -319,6 +319,12 @@ async def _execute_processing_stage(
         raise
 
 # Create router
+# Extraction caps. A 121-page filing takes minutes to parse in full and the
+# LLM only sees the first ~6k characters anyway, so reading further costs time
+# without improving the answer.
+MAX_PDF_PAGES = 15
+MAX_EXTRACT_CHARS = 60_000
+
 router = APIRouter(prefix="/api/v1/document", tags=["document"])
 
 
@@ -468,6 +474,67 @@ async def upload_document(
         raise
     except Exception as e:
         raise _handle_endpoint_error("Document upload", e)
+
+
+@router.get("")
+@router.get("/")
+async def list_documents(
+    status: Optional[str] = None,
+    limit: int = 100,
+    tools: DocumentActionTools = Depends(get_document_tools),
+):
+    """List every uploaded document with its current processing state.
+
+    The Documents page had no way to ask "what has been uploaded?" — the only
+    reads were status-by-id and results-by-id, and the ids lived in React state.
+    So the backend could hold nine processed documents while the page showed an
+    empty screen the moment it was reloaded. This is that missing read.
+    """
+    try:
+        items = []
+        for doc_id, doc in (tools.document_statuses or {}).items():
+            raw_status = doc.get("status")
+            status_value = getattr(raw_status, "value", raw_status) or "unknown"
+
+            filename = doc.get("filename") or ""
+            # Uploads are stored as "<uuid>_<original name>"; show the original.
+            display_name = filename.split("_", 1)[1] if "_" in filename else filename
+
+            results = doc.get("processing_results") or {}
+            structured = (results.get("llm_processing") or {}).get("structured_data") or {}
+            chars = (results.get("preprocessing") or {}).get("chars")
+
+            items.append(
+                {
+                    "document_id": doc_id,
+                    "filename": display_name or doc_id,
+                    "stored_filename": filename,
+                    "status": status_value,
+                    "progress": doc.get("progress", 0),
+                    "current_stage": doc.get("current_stage", ""),
+                    "document_type": (
+                        structured.get("document_type") or doc.get("document_type") or "unknown"
+                    ),
+                    "vendor": structured.get("vendor"),
+                    "document_date": structured.get("document_date"),
+                    "summary": structured.get("summary"),
+                    "character_count": chars,
+                    "uploaded_at": doc.get("upload_time") or doc.get("upload_timestamp"),
+                    "error_message": doc.get("error_message"),
+                    "quality_score": (results.get("validation") or {}).get("overall_score"),
+                }
+            )
+
+        if status:
+            wanted = status.lower()
+            items = [i for i in items if str(i["status"]).lower() == wanted]
+
+        items.sort(key=lambda i: str(i.get("uploaded_at") or ""), reverse=True)
+        return {"total": len(items), "documents": items[:limit]}
+
+    except Exception as e:
+        logger.error(f"Failed to list documents: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to list documents")
 
 
 @router.get("/status/{document_id}", response_model=DocumentProcessingResponse)
@@ -987,6 +1054,26 @@ async def _process_document_pipeline(
     document status through to COMPLETED so the UI shows a real result."""
     tools = await get_document_tools()
 
+    async def _sync_db(status_value: str, stage: str, error: str = None):
+        """Mirror progress into the documents table.
+
+        GET /status reads the database first and only falls back to the JSON
+        store. This pipeline wrote the JSON store alone, so the row stayed at
+        'uploaded' forever: the backend would extract a whole invoice while the
+        UI polled and saw "Preprocessing 0%" indefinitely. Two stores, one
+        truth — so write both.
+        """
+        try:
+            if getattr(tools, "use_database", False) and getattr(tools, "db_service", None):
+                await tools.db_service.update_document_status(
+                    document_id=document_id,
+                    status=status_value,
+                    processing_stage=stage,
+                    error_message=error,
+                )
+        except Exception as sync_error:  # never let bookkeeping fail the run
+            logger.warning(f"Could not sync status to database: {sync_error}")
+
     def _set(stage_name, current, progress, status=ProcessingStage.PREPROCESSING):
         if document_id in tools.document_statuses:
             d = tools.document_statuses[document_id]
@@ -1003,33 +1090,45 @@ async def _process_document_pipeline(
             raise FileNotFoundError(f"File not found: {file_path}")
 
         _set("preprocessing", "Extracting text", 25)
+        await _sync_db("preprocessing", "preprocessing")
 
         # --- 1. Extract text (in a worker thread: pdfplumber is CPU-bound and
         #        would otherwise block the event loop and freeze the whole API) ---
-        def _extract_text() -> str:
+        # Page counts matter to the reader ("15 of 121 pages read"), so return
+        # them alongside the text instead of reporting total_pages: 0.
+        def _extract_text() -> Dict[str, Any]:
             if file_path.lower().endswith(".pdf"):
                 import pdfplumber
                 out = []
                 with pdfplumber.open(file_path) as pdf:
-                    for page in pdf.pages[:15]:      # cap pages for large filings
+                    total = len(pdf.pages)
+                    read = 0
+                    for page in pdf.pages[:MAX_PDF_PAGES]:
                         out.append(page.extract_text() or "")
-                        if sum(len(p) for p in out) > 60000:
+                        read += 1
+                        if sum(len(p) for p in out) > MAX_EXTRACT_CHARS:
                             break
-                return "\n".join(out)
+                return {"text": "\n".join(out), "pages_total": total, "pages_read": read}
             if file_path.lower().endswith((".txt", ".md", ".csv")):
                 with open(file_path, "r", errors="ignore") as f:
-                    return f.read()
-            return ""
+                    body = f.read()
+                return {"text": body, "pages_total": 1, "pages_read": 1}
+            return {"text": "", "pages_total": 0, "pages_read": 0}
 
         text = ""
+        pages_total = pages_read = 0
         try:
-            text = await asyncio.wait_for(asyncio.to_thread(_extract_text), timeout=90)
+            extracted = await asyncio.wait_for(asyncio.to_thread(_extract_text), timeout=90)
+            text = extracted["text"]
+            pages_total = extracted["pages_total"]
+            pages_read = extracted["pages_read"]
         except asyncio.TimeoutError:
             logger.warning(f"Text extraction timed out for {document_id}")
         except Exception as e:
             logger.warning(f"Text extraction issue for {document_id}: {e}")
         text = (text or "").strip()
         _set("ocr_extraction", "Reading content", 50)
+        await _sync_db("ocr_extraction", "ocr_extraction")
 
         # --- 2. LLM structured extraction (Groq) ---
         structured: Dict[str, Any] = {}
@@ -1063,22 +1162,53 @@ async def _process_document_pipeline(
                 structured = {"document_type": document_type, "summary": summary,
                               "note": "LLM extraction unavailable; showing raw text preview."}
         else:
-            structured = {"document_type": document_type,
-                          "note": "No selectable text found (scanned image PDFs need OCR)."}
+            structured = {
+                "document_type": document_type,
+                "note": (
+                    "No selectable text found. This looks like a scanned or "
+                    "image-only PDF — OCR is not enabled in this build, so only "
+                    "PDFs with embedded text can be read."
+                ),
+            }
+
+        # A document with no text is not a success. It used to be scored 4.2/5
+        # and auto-approved, which told the reader the extraction had worked.
+        extracted_anything = bool(text) and bool(
+            {k: v for k, v in structured.items() if k not in ("note", "document_type") and v}
+        )
+        if not text:
+            decision, score, routing = "REVIEW_REQUIRED", 1.0, "flag_review"
+        elif extracted_anything:
+            decision, score, routing = "APPROVE", 4.2, "auto_approve"
+        else:
+            decision, score, routing = "REVIEW_REQUIRED", 2.5, "flag_review"
 
         _set("llm_processing", "Structuring fields", 75)
+        await _sync_db("llm_processing", "llm_processing")
 
         # --- 3. Finalize: store results + mark completed ---
         exists, _ = tools._check_document_exists(document_id)
         if exists:
             d = tools.document_statuses[document_id]
             d["processing_results"] = {
-                "preprocessing": {"pages": None, "chars": len(text)},
+                "preprocessing": {
+                    "pages": pages_total,
+                    "pages_read": pages_read,
+                    "chars": len(text),
+                },
                 "ocr": {"text": text[:20000]},
                 "llm_processing": {"structured_data": structured, "entities": structured},
-                "validation": {"decision": "APPROVE" if structured else "REVIEW_REQUIRED",
-                               "overall_score": 4.2 if structured else 2.5},
-                "routing": {"routing_action": "auto_approve" if structured else "flag_review"},
+                "validation": {"decision": decision, "overall_score": score},
+                "routing": {
+                    "routing_action": routing,
+                    "human_review_required": routing == "flag_review",
+                    "routing_reason": (
+                        "No text could be read from the file"
+                        if not text
+                        else ("Fields extracted successfully" if extracted_anything
+                              else "Text read, but no fields could be identified")
+                    ),
+                },
                 "stored_at": datetime.now().isoformat(),
             }
             d["status"] = ProcessingStage.COMPLETED
@@ -1088,18 +1218,32 @@ async def _process_document_pipeline(
                 s["status"] = "completed"
                 s["completed_at"] = datetime.now().isoformat()
             await asyncio.to_thread(tools._save_status_data)
+        await _sync_db("completed", "completed")
         logger.info(f"Document {_sanitize_log_data(document_id)} processed successfully")
 
     except Exception as e:
-        logger.error(f"Document processing failed for {_sanitize_log_data(document_id)}: {e}")
+        logger.error(
+            f"Document processing failed for {_sanitize_log_data(document_id)}: {e}",
+            exc_info=True,
+        )
         if document_id in tools.document_statuses:
-            tools.document_statuses[document_id]["status"] = ProcessingStage.FAILED
-            tools.document_statuses[document_id]["progress"] = 0
-            tools.document_statuses[document_id]["current_stage"] = f"Failed: {e}"
+            d = tools.document_statuses[document_id]
+            d["status"] = ProcessingStage.FAILED
+            d["progress"] = 0
+            d["current_stage"] = "Failed"
+            # Record *why*. Failed documents previously carried
+            # error_message: None, so the UI could only say "Failed" and the
+            # person had no idea whether it was the file, the key or the parser.
+            d["error_message"] = f"{type(e).__name__}: {e}"[:500]
+            for stage in d.get("stages", []):
+                if stage.get("status") == "processing":
+                    stage["status"] = "failed"
+                    stage["error_message"] = str(e)[:300]
             try:
                 tools._save_status_data()
             except Exception:
                 pass
+        await _sync_db("failed", "failed", error=str(e)[:300])
 
 
 
