@@ -217,6 +217,10 @@ def _convert_status_enum_to_string(status_value: Any) -> str:
         return status_value.value
     elif isinstance(status_value, str):
         return status_value
+    elif isinstance(status_value, dict):
+        # Tolerate status files written before enums were serialized properly:
+        # {"_value_": "completed", "_name_": "COMPLETED", ...}
+        return status_value.get("_value_") or str(status_value.get("_name_", "unknown")).lower()
     else:
         return str(status_value)
 
@@ -970,16 +974,28 @@ async def process_document_background(
 
         _set("preprocessing", "Extracting text", 25)
 
-        # --- 1. Extract text ---
-        text = ""
-        try:
+        # --- 1. Extract text (in a worker thread: pdfplumber is CPU-bound and
+        #        would otherwise block the event loop and freeze the whole API) ---
+        def _extract_text() -> str:
             if file_path.lower().endswith(".pdf"):
                 import pdfplumber
+                out = []
                 with pdfplumber.open(file_path) as pdf:
-                    text = "\n".join((page.extract_text() or "") for page in pdf.pages[:20])
-            elif file_path.lower().endswith((".txt", ".md", ".csv")):
+                    for page in pdf.pages[:15]:      # cap pages for large filings
+                        out.append(page.extract_text() or "")
+                        if sum(len(p) for p in out) > 60000:
+                            break
+                return "\n".join(out)
+            if file_path.lower().endswith((".txt", ".md", ".csv")):
                 with open(file_path, "r", errors="ignore") as f:
-                    text = f.read()
+                    return f.read()
+            return ""
+
+        text = ""
+        try:
+            text = await asyncio.wait_for(asyncio.to_thread(_extract_text), timeout=90)
+        except asyncio.TimeoutError:
+            logger.warning(f"Text extraction timed out for {document_id}")
         except Exception as e:
             logger.warning(f"Text extraction issue for {document_id}: {e}")
         text = (text or "").strip()
@@ -999,8 +1015,11 @@ async def process_document_background(
                     "amount}), and summary (one sentence). Use null when unknown.\n\n"
                     f"DOCUMENT TEXT:\n{text[:6000]}"
                 )
-                resp = await client.generate_response(
-                    [{"role": "user", "content": prompt}], temperature=0.1, max_tokens=800
+                resp = await asyncio.wait_for(
+                    client.generate_response(
+                        [{"role": "user", "content": prompt}], temperature=0.1, max_tokens=800
+                    ),
+                    timeout=60,
                 )
                 content = resp.content.strip()
                 if "```" in content:

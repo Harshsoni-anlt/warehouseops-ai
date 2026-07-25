@@ -391,9 +391,16 @@ class DocumentActionTools:
     def _serialize_for_json(self, obj):
         """Recursively serialize objects for JSON, handling PIL Images and other non-serializable types."""
         from PIL import Image
+        from enum import Enum
         import base64
         import io
-        
+
+        # Enums (e.g. ProcessingStage) must serialize to their value, not their
+        # internals — otherwise the whole enum class gets dumped into the status
+        # file and the UI can't read the real status back.
+        if isinstance(obj, Enum):
+            return obj.value
+
         if isinstance(obj, Image.Image):
             # Convert PIL Image to base64 string
             buffer = io.BytesIO()
