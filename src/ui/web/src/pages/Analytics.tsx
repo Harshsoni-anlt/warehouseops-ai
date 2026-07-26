@@ -102,7 +102,7 @@ const Analytics: React.FC = () => {
                   labelFormatter={(label) => `Type: ${label}`}
                 />
                 <Legend />
-                <Bar dataKey="count" fill="#6366F1" name="Equipment Count" />
+                <Bar dataKey="count" fill="#10B981" name="Equipment Count" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -125,6 +125,7 @@ const Analytics: React.FC = () => {
                   outerRadius={80}
                   fill="#6366F1"
                   dataKey="count"
+                  isAnimationActive={false}
                 >
                   {equipmentStatusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -136,36 +137,8 @@ const Analytics: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Equipment Type Breakdown */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Equipment Type Breakdown
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={equipmentTrendData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#6366F1"
-                  dataKey="count"
-                >
-                  {equipmentTrendData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
-
         {/* Incident Severity */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Incident Severity Distribution
@@ -176,7 +149,7 @@ const Analytics: React.FC = () => {
                 <XAxis dataKey="severity" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#6366F1" />
+                <Bar dataKey="count" fill="#10B981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
