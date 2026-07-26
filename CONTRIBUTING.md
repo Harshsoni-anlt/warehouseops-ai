@@ -1,8 +1,23 @@
-# Contributing Guidelines
+# Contributing
 
-We're posting these examples on GitHub to support the  LLM community and facilitate feedback. We invite contributions!
+Contributions are welcome — especially bug reports from anyone who has run this
+against **real warehouse data**. The bundled sample dataset is synthetic and
+well-behaved; yours won't be, and that's where the interesting failures live.
 
-Use the following guidelines to contribute to this project.
+Good first contributions:
+
+- Run `./run.sh` on your OS and open an issue for anything that didn't work
+- Import your own CSV and report what the importer choked on
+- Add a routing test case for a question that went to the wrong agent
+  (`tests/test_intent_routing.py`)
+- Anything on the [roadmap](docs/ROADMAP.md)
+
+## Before you open a PR
+
+```bash
+pytest                                   # tests must pass
+cd src/ui/web && npx tsc --noEmit        # TypeScript must compile
+```
 
 ## Pull Requests
 
@@ -14,7 +29,8 @@ Developer workflow for code contributions is as follows:
 
 3. Once the code changes are staged on the fork and ready for review, a Pull Request (PR) can be requested to merge the changes from a branch of the fork into a selected branch of upstream.
 
-4. Since there is no CI/CD process in place yet, the PR will be accepted and the corresponding issue closed only after adequate testing has been completed, manually, by the developer and/or repository owners reviewing the code.
+4. There is no CI pipeline yet, so PRs are merged after manual review and
+   testing. Describe what you tested and on which OS and Python version.
 
 ## Signing Your Work
 

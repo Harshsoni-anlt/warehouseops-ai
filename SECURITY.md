@@ -1,57 +1,58 @@
-# Security
+# Security Policy
 
- is dedicated to the security and trust of our software products and services, including all source code repositories managed through our organization.
+## Reporting a vulnerability
 
-If you need to report a security issue, please use the appropriate contact points outlined below. Please do not report security vulnerabilities through GitHub.
+Please **do not** open a public GitHub issue for security problems.
 
-## Reporting Potential Security Vulnerability in an  Product
+Use GitHub's private reporting instead:
+**[Report a vulnerability](https://github.com/Harshsoni-anlt/warehouseops-ai/security/advisories/new)**
 
-To report a potential security vulnerability in any  product:
+Include the affected component, how to reproduce it, and the impact you think it
+has. I'll acknowledge within a few days. This is a personal open-source project,
+not a funded product — there's no bug bounty, but credit is given for anything
+valid.
 
-- **Web**: [Security Vulnerability Submission Form](https://app.intigriti.com/programs/nvidia/nvidiavdp/detail)
-- **E-Mail**: psirt@nvidia.com
-  - We encourage you to use the following PGP key for secure email communication: [ public PGP Key for communication](https://www.nvidia.com/en-us/security/pgp-key/)
-  - Please include the following information:
-    - Product/Driver name and version/branch that contains the vulnerability
-    - Type of vulnerability (code execution, denial of service, buffer overflow, etc.)
-    - Instructions to reproduce the vulnerability
-    - Proof-of-concept or exploit code
-    - Potential impact of the vulnerability, including how an attacker could exploit the vulnerability
+## Scope
 
-While  currently does not have a bug bounty program, we do offer acknowledgement when an externally reported security issue is addressed under our coordinated vulnerability disclosure policy. Please visit our Product Security Incident Response Team (PSIRT) policies page for more information.
+This is a self-hosted demo application, designed to run on a developer's own
+machine against their own data.
 
-##  Product Security
+**It is not hardened for public internet deployment.** Specifically:
 
-For all security-related concerns, please visit 's Product Security portal at https://www.nvidia.com/en-us/security
+- Authentication is deliberately relaxed for local demo use — the console signs
+  in automatically. Do not expose an instance to the internet as-is.
+- `/chat` has no per-IP rate limiting. A public instance would let anyone
+  exhaust your LLM provider quota.
+- SQLite is single-writer and has no row-level access control.
+- Uploaded documents are stored on the local filesystem, unencrypted.
 
-## Project Security Documentation
+If you plan to host this, treat the above as a to-do list rather than a surprise.
 
-This project includes additional security documentation:
+## Handling secrets
 
-- **[Python REPL Security Guidelines](docs/security/PYTHON_REPL_SECURITY.md)**: Guidelines for handling Python REPL and code execution capabilities, including protection against CVE-2024-38459 and related vulnerabilities.
+- `.env` is gitignored and must never be committed. `run.sh` creates it from
+  `.env.example` and generates a random JWT secret per install.
+- Get a Groq API key at [console.groq.com/keys](https://console.groq.com/keys).
+  The free tier has no billing — hitting a limit returns HTTP 429 and cannot
+  produce a charge — but treat the key as a credential regardless.
+- To run with no external API calls at all, set `LLM_PROVIDER=ollama`.
 
-- **[LangChain Path Traversal Security](docs/security/LANGCHAIN_PATH_TRAVERSAL.md)**: Guidelines for preventing directory traversal attacks in LangChain Hub path loading, including protection against CVE-2024-28088.
-
-- **[Axios SSRF Protection](docs/security/AXIOS_SSRF_PROTECTION.md)**: Guidelines for preventing Server-Side Request Forgery (SSRF) attacks in Axios HTTP client usage, including protection against CVE-2025-27152.
-
-## Security Tools
-
-### Dependency Blocklist Checker
-
-Check for blocked dependencies that should not be installed:
+## Dependency checks
 
 ```bash
-# Check requirements.txt
-python scripts/security/dependency_blocklist.py
-
-# Check installed packages
-python scripts/security/dependency_blocklist.py --check-installed
-
-# Exit on violation (for CI/CD)
-python scripts/security/dependency_blocklist.py --exit-on-violation
+python scripts/security/dependency_blocklist.py                     # check requirements.txt
+python scripts/security/dependency_blocklist.py --check-installed   # check the venv
+python scripts/security/dependency_blocklist.py --exit-on-violation # for CI
 ```
 
-This tool automatically detects and blocks:
-- `langchain-experimental` (Python REPL vulnerabilities)
-- Other packages with code execution capabilities
+This blocks packages with code-execution capabilities that this project has no
+reason to depend on, such as `langchain-experimental`.
 
+## Inherited security work
+
+This project is an adaptation of an open-source reference architecture (see
+[NOTICE](NOTICE)). Mitigations carried over from the upstream work include
+protections against CVE-2024-38459 (Python REPL execution), CVE-2024-28088
+(LangChain Hub path traversal) and CVE-2025-27152 (Axios SSRF — the API client
+sets `allowAbsoluteUrls: false`). LangGraph runs without a SQLite checkpointer,
+avoiding CVE-2025-8709.
