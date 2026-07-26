@@ -230,7 +230,40 @@ class SafetyMCPAdapter(MCPAdapter):
             handler=self._handle_get_safety_procedures,
         )
 
+        # Read tool. Without it the agent could only *file* incidents, so a
+        # question like "show me recent incidents" was answered by creating one.
+        self.tools["get_recent_incidents"] = MCPTool(
+            name="get_recent_incidents",
+            description="List recent safety incidents. Read-only.",
+            tool_type=MCPToolType.FUNCTION,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "How many incidents to return (default 10)",
+                    },
+                    "severity": {
+                        "type": "string",
+                        "description": "Filter by severity (low, medium, high, critical)",
+                    },
+                },
+            },
+            handler=self._handle_get_recent_incidents,
+        )
+
         logger.info(f"Registered {len(self.tools)} safety tools")
+
+    async def _handle_get_recent_incidents(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle get_recent_incidents tool execution."""
+        try:
+            return await self.safety_tools.get_recent_incidents(
+                limit=int(arguments.get("limit", 10)),
+                severity=arguments.get("severity"),
+            )
+        except Exception as e:
+            logger.error(f"Error executing get_recent_incidents: {e}")
+            return {"error": str(e)}
 
     async def _handle_log_incident(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle log_incident tool execution."""

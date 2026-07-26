@@ -585,6 +585,45 @@ class SafetyActionTools:
                 created_at=datetime.now(),
             )
 
+    async def get_recent_incidents(
+        self, limit: int = 10, severity: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Read recent safety incidents.
+
+        The safety agent could log an incident but had no way to *read* them, so
+        "show me recent safety incidents" fell through to the reporting path and
+        filed a new incident describing the question that was asked. A read
+        question must never produce a write.
+        """
+        from src.retrieval.structured.sql_retriever import get_sql_retriever
+
+        sql = await get_sql_retriever()
+        if severity:
+            rows = await sql.execute_query(
+                """
+                SELECT id, severity, description, reported_by, occurred_at
+                FROM safety_incidents WHERE LOWER(severity) = $1
+                ORDER BY occurred_at DESC LIMIT $2
+                """,
+                (severity.lower(), limit),
+            )
+        else:
+            rows = await sql.execute_query(
+                """
+                SELECT id, severity, description, reported_by, occurred_at
+                FROM safety_incidents ORDER BY occurred_at DESC LIMIT $1
+                """,
+                (limit,),
+            )
+
+        incidents = []
+        for r in rows:
+            d = dict(r)
+            occurred = d.get("occurred_at")
+            d["occurred_at"] = occurred.isoformat() if hasattr(occurred, "isoformat") else str(occurred or "")
+            incidents.append(d)
+        return {"incidents": incidents, "count": len(incidents)}
+
     async def get_safety_procedures(
         self, procedure_type: Optional[str] = None, category: Optional[str] = None
     ) -> Dict[str, Any]:

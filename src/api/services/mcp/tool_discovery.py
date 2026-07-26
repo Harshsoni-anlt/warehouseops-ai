@@ -676,10 +676,29 @@ class ToolDiscoveryService:
             logger.error(f"Error getting available tools: {e}")
             return []
 
+    def _resolve(self, key: str) -> Optional[str]:
+        """Map any of the identifiers callers hold onto a registry key.
+
+        The registry is keyed by `source:name`, but callers hold whatever they
+        were handed earlier: a `tool_id` uuid from a previous discovery pass, or
+        a bare tool name. Keying the registry on identity fixed the duplicate
+        entries, but broke every lookup that still used the uuid — the equipment
+        agent reported "technical issues with the equipment status tools" for
+        tools that were sitting right there. Resolve all three forms.
+        """
+        if key in self.discovered_tools:
+            return key
+        for registry_key, tool in self.discovered_tools.items():
+            if tool.tool_id == key or tool.name == key:
+                return registry_key
+        return None
+
     async def execute_tool(self, tool_key: str, arguments: Dict[str, Any]) -> Any:
         """Execute a discovered tool with security validation."""
-        if tool_key not in self.discovered_tools:
+        resolved = self._resolve(tool_key)
+        if resolved is None:
             raise ValueError(f"Tool '{tool_key}' not found")
+        tool_key = resolved
 
         tool = self.discovered_tools[tool_key]
         

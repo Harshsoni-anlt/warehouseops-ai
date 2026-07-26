@@ -290,9 +290,27 @@ class MCPSafetyComplianceAgent:
             entities = {}
             intent = "incident_reporting"  # Default intent
             
-            # Quick intent detection based on keywords
+            # Read intents are checked FIRST. "Show me recent safety incidents"
+            # used to match "incident" and fall into the reporting branch, which
+            # filed a new incident describing the question. A question must never
+            # cause a write.
+            asking = any(
+                phrase in query_lower
+                for phrase in ("show me", "list", "what are", "which ", "how many",
+                               "recent", "last ", "latest", "any ", "were there",
+                               "have there been", "tell me about")
+            )
+            reporting = any(
+                phrase in query_lower
+                for phrase in ("log a", "log an", "report a", "report an", "file a",
+                               "there is a", "there's a", "we have a", "raise a",
+                               "happened", "just occurred")
+            )
+
             if any(word in query_lower for word in ["procedure", "checklist", "policy", "what are"]):
                 intent = "policy_lookup"
+            elif asking and not reporting:
+                intent = "incident_lookup"
             elif any(word in query_lower for word in ["report", "incident", "alert", "issue"]):
                 intent = "incident_reporting"
             elif any(word in query_lower for word in ["compliance", "audit"]):
@@ -307,9 +325,13 @@ class MCPSafetyComplianceAgent:
                 "procedure", "checklist", "what are", "show me", "safety"
             ]
             is_simple_query = (
-                any(indicator in query_lower for indicator in simple_query_indicators) and
-                len(query.split()) < 20 and  # Short queries
-                intent == "policy_lookup"  # Only for policy lookups
+                any(indicator in query_lower for indicator in simple_query_indicators)
+                and len(query.split()) < 20
+                # Read intents must take the fast path too. Falling through to the
+                # LLM parser sent "show me recent incidents" back to
+                # incident_reporting, so the reply announced an incident had been
+                # filed even after the write itself was prevented.
+                and intent in ("policy_lookup", "incident_lookup")
             )
             
             if is_simple_query:
@@ -500,27 +522,40 @@ Return only valid JSON.""",
         try:
             execution_plan = []
 
+            # Read-only: list incidents, never create one.
+            if query.intent == "incident_lookup":
+                lookup_tool = next(
+                    (t for t in tools if t.name == "get_recent_incidents"), None
+                )
+                if lookup_tool:
+                    execution_plan.append(
+                        self._create_execution_plan_entry(
+                            lookup_tool, query, priority=1, required=True
+                        )
+                    )
+                return execution_plan
+
             # For incident reporting (flooding, fire, etc.), prioritize getting safety procedures first
             if query.intent == "incident_reporting":
                 # First, get safety procedures for the incident type
-                procedures_tool = next((t for t in tools if t.tool_id == "get_safety_procedures"), None)
+                procedures_tool = next((t for t in tools if t.name == "get_safety_procedures"), None)
                 if procedures_tool:
                     execution_plan.append(self._create_execution_plan_entry(procedures_tool, query, priority=1, required=True))
                 
                 # Then, try to log the incident if we have required entities
                 if query.entities.get("severity") and query.entities.get("description"):
-                    log_incident_tool = next((t for t in tools if t.tool_id == "log_incident"), None)
+                    log_incident_tool = next((t for t in tools if t.name == "log_incident"), None)
                     if log_incident_tool:
                         execution_plan.append(self._create_execution_plan_entry(log_incident_tool, query, priority=2, required=False))
                 
                 # For critical incidents, also broadcast alert
                 if query.entities.get("severity") == "critical" and query.entities.get("message"):
-                    broadcast_tool = next((t for t in tools if t.tool_id == "broadcast_alert"), None)
+                    broadcast_tool = next((t for t in tools if t.name == "broadcast_alert"), None)
                     if broadcast_tool:
                         execution_plan.append(self._create_execution_plan_entry(broadcast_tool, query, priority=3, required=False))
             elif query.intent == "policy_lookup":
                 # For policy lookup, use get_safety_procedures
-                procedures_tool = next((t for t in tools if t.tool_id == "get_safety_procedures"), None)
+                procedures_tool = next((t for t in tools if t.name == "get_safety_procedures"), None)
                 if procedures_tool:
                     execution_plan.append(self._create_execution_plan_entry(procedures_tool, query, priority=1, required=True))
             else:
