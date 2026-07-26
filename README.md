@@ -13,13 +13,11 @@ Then **upload your own CSV** and it answers about your warehouse instead of the 
 
 ![WarehouseOps AI walkthrough](docs/demo.gif)
 
-> **What this is:** a port, not a from-scratch build. I took an Apache-2.0
-> multi-agent warehouse reference architecture published by NVIDIA and replaced
-> its entire infrastructure layer — inference, embeddings, vector store,
-> database, training — with free and open-source components, then fixed what
-> broke. Attribution is in [NOTICE](NOTICE); the original copyright headers are
-> intact in every file that retains upstream code. What's mine is listed under
-> [What I changed](#what-i-changed).
+> Built on an Apache-2.0 multi-agent warehouse reference architecture published
+> by NVIDIA — the kind of reference implementation that exists to be built on.
+> The infrastructure layer is entirely replaced and a large amount is new or
+> rewritten; see [What I changed](#what-i-changed). Upstream attribution is in
+> [NOTICE](NOTICE).
 
 > **Runs on your machine, not a hosted demo.** Two commands and a free API key.
 > Jump to [Quick start](#quick-start).
@@ -39,9 +37,10 @@ Then **upload your own CSV** and it answers about your warehouse instead of the 
 
 ## What I changed
 
-The upstream architecture is good. It also assumed a GPU cluster, a managed
-vector database, TimescaleDB and a paid inference endpoint — which meant nobody
-without that stack could run it. Everything below is my work on top:
+The reference architecture assumed a GPU cluster, a managed vector database,
+TimescaleDB and a paid inference endpoint — so nobody without that stack could
+run it. Roughly 200 files were removed and the whole infrastructure layer
+replaced. Everything below is my work:
 
 **Infrastructure, swapped behind the existing interfaces**
 - Inference → Groq free tier, or local Ollama for a fully offline run
