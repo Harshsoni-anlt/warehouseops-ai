@@ -217,7 +217,7 @@ class GuardrailsService:
 
             # Use chat completions endpoint for guardrails
             # NOTE: The API approach is currently disabled by default (GUARDRAILS_USE_API=false)
-            # because the guardrails endpoint/model may not be available at integrate.api.nvidia.com
+            # because the configured guardrails model may not be reachable
             # Model: llama-3.3-70b-versatile at api.groq.com/openai/v1
             # Use pattern matching (default) or SDK (USE_NEMO_GUARDRAILS_SDK=true) instead.
             response = await self.api_client.post(

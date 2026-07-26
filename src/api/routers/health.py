@@ -76,7 +76,7 @@ async def check_redis_health() -> dict:
         return {"status": "unhealthy", "message": str(e)}
 
 
-async def check_milvus_health() -> dict:
+async def check_vector_store_health() -> dict:
     """Check vector database (ChromaDB) connectivity."""
     try:
         from src.retrieval.vector.chroma_retriever import get_chroma_retriever
@@ -138,23 +138,30 @@ async def health_check():
         except Exception as e:
             services["database"] = {"status": "error", "message": str(e)}
 
+        # Redis is optional — there is an in-memory cache fallback and the
+        # README never asks you to install it. Reporting the whole app as
+        # "degraded" because an optional cache is absent told everyone running
+        # the default setup that something was broken when nothing was.
         try:
-            services["redis"] = await check_redis_health()
+            services["cache (optional)"] = await check_redis_health()
         except Exception as e:
-            services["redis"] = {"status": "error", "message": str(e)}
+            services["cache (optional)"] = {"status": "error", "message": str(e)}
 
+        # Named for what it is. This key used to read "milvus" in a project
+        # whose README says Milvus was replaced by ChromaDB.
         try:
-            services["milvus"] = await check_milvus_health()
+            services["vector_store"] = await check_vector_store_health()
         except Exception as e:
-            services["milvus"] = {"status": "error", "message": str(e)}
+            services["vector_store"] = {"status": "error", "message": str(e)}
 
         health_data["services"] = services
 
-        # Determine overall health status
+        # Only required services can degrade overall health.
+        REQUIRED = {"database", "vector_store"}
         unhealthy_services = [
             name
             for name, info in services.items()
-            if info.get("status") in ["unhealthy", "error"]
+            if name in REQUIRED and info.get("status") in ["unhealthy", "error"]
         ]
 
         if unhealthy_services:
