@@ -38,7 +38,6 @@ import {
   Article as ArticleIcon,
   Build as BuildIcon,
   Api as ApiIcon,
-  Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 
 // Component to display architecture diagram with fallback
@@ -109,36 +108,40 @@ const Documentation: React.FC = () => {
     setExpandedSection(isExpanded ? panel : false);
   };
 
+  // These must match run.sh and the README. The previous version told people to
+  // run ./scripts/setup/dev_up.sh and a Jupyter notebook, neither of which
+  // exists in this repository — anyone following the documentation hit a dead
+  // end on step 4.
   const quickStartSteps = [
     {
       step: 1,
-      title: "Environment Setup",
-      description: "Set up Python virtual environment and install dependencies",
-      code: "python -m venv env && source env/bin/activate && pip install -r requirements.txt"
+      title: "Clone the repository",
+      description: "Python 3.10+ and Node 18+ are the only prerequisites",
+      code: "git clone https://github.com/Harshsoni-anlt/warehouseops-ai.git\ncd warehouseops-ai"
     },
     {
       step: 2,
-      title: "Database Configuration",
-      description: "Local SQLite and ChromaDB — no servers to configure",
-      code: "cp .env.example .env\n# Edit database credentials in .env"
+      title: "Start the backend",
+      description: "Creates the virtualenv, installs dependencies, writes .env and seeds the SQLite database on first run",
+      code: "./run.sh            # → http://localhost:8000/docs"
     },
     {
       step: 3,
-      title: "LLM inference Setup",
-      description: "Configure  API keys for LLM and embeddings",
-      code: "export GROQ_API_KEY=your_api_key\n# Or add to .env file"
+      title: "Add a Groq API key (optional)",
+      description: "Free, no credit card. Everything except the assistant and document extraction works without one.",
+      code: "# in .env\nGROQ_API_KEY=gsk_your_key_here"
     },
     {
       step: 4,
-      title: "Start Services",
-      description: "Launch the application stack",
-      code: "./scripts/setup/dev_up.sh && ./scripts/start_server.sh"
+      title: "Start the console",
+      description: "In a second terminal",
+      code: "./run_frontend.sh   # → http://localhost:3000"
     },
     {
       step: 5,
-      title: "Jupyter Notebook Setup (Recommended)",
-      description: "Use the interactive setup guide for step-by-step setup",
-      code: "jupyter notebook notebooks/setup/complete_setup_guide.ipynb"
+      title: "Run fully offline (optional)",
+      description: "No API key and no network calls at all",
+      code: "# in .env\nLLM_PROVIDER=ollama\n\nollama pull qwen2.5:7b-instruct"
     }
   ];
 
@@ -819,7 +822,7 @@ const Documentation: React.FC = () => {
             <AlertTitle>📖 Detailed Documentation</AlertTitle>
             <Typography variant="body2" sx={{ mt: 1 }}>
               For comprehensive documentation including configuration, API interface, monitoring, and troubleshooting, 
-              see the <Link href="https://github.com/-AI-Blueprints/WarehouseOps AI/blob/main/docs/architecture/guardrails-implementation.md" target="_blank" rel="noopener">Guardrails Implementation Guide</Link>.
+              see the guardrails configuration in <code>data/config/guardrails/</code>.
             </Typography>
           </Alert>
         </AccordionDetails>
@@ -1159,10 +1162,8 @@ const Documentation: React.FC = () => {
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
                       • src/api/routers/advanced_forecasting.py<br/>
                       • src/api/routers/training.py<br/>
-                      • scripts/forecasting/phase1_phase2_forecasting_agent.py<br/>
-                      • scripts/forecasting/phase3_advanced_forecasting.py<br/>
                       • Trains scikit-learn models on live demand history<br/>
-                      • scripts/setup/create_model_tracking_tables.sql
+                      • data/sqlite/schema.sql — model_training_history, model_predictions
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1836,14 +1837,11 @@ const Documentation: React.FC = () => {
             <Button 
             variant="outlined" 
             startIcon={<GitHubIcon />}
-            href="https://github.com/-AI-Blueprints/WarehouseOps AI"
+            href="https://github.com/Harshsoni-anlt/warehouseops-ai"
             target="_blank"
             rel="noopener noreferrer"
           >
             View Source
-          </Button>
-          <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
           </Button>
         </Box>
       </Box>

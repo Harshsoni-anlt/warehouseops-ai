@@ -38,7 +38,6 @@ import {
   Article as ArticleIcon,
   Build as BuildIcon,
   Api as ApiIcon,
-  Dashboard as DashboardIcon,
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckCircleIcon,
   AccountTree as AccountTreeIcon,
@@ -749,14 +748,11 @@ const ArchitectureDiagrams: React.FC = () => {
           <Button 
             variant="outlined" 
             startIcon={<GitHubIcon />}
-            href="https://github.com/T-DevH/warehouse-operational-assistant"
+            href="https://github.com/Harshsoni-anlt/warehouseops-ai"
             target="_blank"
             rel="noopener noreferrer"
           >
             View Source
-          </Button>
-          <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
           </Button>
         </Box>
       </Box>
