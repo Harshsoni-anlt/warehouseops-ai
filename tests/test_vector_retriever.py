@@ -8,9 +8,9 @@ import asyncio
 import random
 import tempfile
 
-from src.retrieval.vector.milvus_retriever import (
-    MilvusRetriever,
-    MilvusConfig,
+from src.retrieval.vector.chroma_retriever import (
+    ChromaRetriever,
+    ChromaConfig,
     _expr_to_where,
 )
 
@@ -27,7 +27,7 @@ def test_expr_to_where():
 
 def _fresh_retriever():
     tmp = tempfile.mkdtemp()
-    return MilvusRetriever(MilvusConfig(persist_directory=tmp))
+    return ChromaRetriever(ChromaConfig(persist_directory=tmp))
 
 
 def test_insert_search_and_filter():

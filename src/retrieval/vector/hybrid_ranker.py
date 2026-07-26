@@ -24,7 +24,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import math
-from .milvus_retriever import SearchResult
+from .chroma_retriever import SearchResult
 from ..structured.inventory_queries import InventoryItem
 
 logger = logging.getLogger(__name__)

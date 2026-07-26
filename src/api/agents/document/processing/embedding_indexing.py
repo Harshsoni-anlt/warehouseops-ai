@@ -14,8 +14,11 @@
 # limitations under the License.
 
 """
-Stage 4: Embedding & Indexing with sentence-transformers/all-MiniLM-L6-v2 (2048-dim)
-Generates semantic embeddings and stores them in Milvus vector database.
+Stage 4: Embedding & Indexing with sentence-transformers/all-MiniLM-L6-v2.
+
+Legacy helper retained for the document pipeline. The active vector store is
+ChromaDB (src/retrieval/vector/chroma_retriever.py); the optional pymilvus
+import below is guarded so nothing here requires a vector-DB server.
 """
 
 import asyncio
@@ -25,8 +28,8 @@ import os
 import json
 from datetime import datetime
 
-# NOTE: This legacy document-indexing helper targeted Milvus directly. The
-# active vector store is now ChromaDB (see src/retrieval/vector/milvus_retriever.py,
+# NOTE: This helper originally targeted a Milvus server. The
+# active vector store is now ChromaDB (see src/retrieval/vector/chroma_retriever.py,
 # used by the document extraction agent). pymilvus is optional and only needed
 # if this legacy indexer is invoked; the import is guarded so the app runs
 # without pymilvus installed.

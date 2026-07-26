@@ -60,7 +60,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data: https:; "
-            "connect-src 'self' https://api.nvidia.com https://integrate.api.nvidia.com; "
+            # Only the chat backend this build actually calls. The vendor endpoints
+            # that used to be listed here are no longer reachable from this app.
+            "connect-src 'self' https://api.groq.com; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "form-action 'self'"

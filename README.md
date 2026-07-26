@@ -13,6 +13,14 @@ Then **upload your own CSV** and it answers about your warehouse instead of the 
 
 ![WarehouseOps AI walkthrough](docs/demo.gif)
 
+> **What this is:** a port, not a from-scratch build. I took an Apache-2.0
+> multi-agent warehouse reference architecture published by NVIDIA and replaced
+> its entire infrastructure layer — inference, embeddings, vector store,
+> database, training — with free and open-source components, then fixed what
+> broke. Attribution is in [NOTICE](NOTICE); the original copyright headers are
+> intact in every file that retains upstream code. What's mine is listed under
+> [What I changed](#what-i-changed).
+
 > **Runs on your machine, not a hosted demo.** Two commands and a free API key.
 > Jump to [Quick start](#quick-start).
 
@@ -27,7 +35,46 @@ Then **upload your own CSV** and it answers about your warehouse instead of the 
 | **Bring your own data** | Upload a CSV of inventory, stock movements or equipment. Every page and the assistant switch to your operation. |
 | **Read documents** | Drop in an invoice or a filing — text extraction plus an LLM pulls vendor, dates, totals and line items into a table. |
 | **Forecast demand** | Train scikit-learn models on movement history, compare MAPE across model types, get reorder recommendations. |
-| **Tools over MCP** | 18 agent actions exposed as discoverable Model Context Protocol tools, with a dashboard to search and execute them. |
+| **Tools over MCP** | 19 agent actions exposed as discoverable Model Context Protocol tools, with a dashboard to search and execute them. |
+
+## What I changed
+
+The upstream architecture is good. It also assumed a GPU cluster, a managed
+vector database, TimescaleDB and a paid inference endpoint — which meant nobody
+without that stack could run it. Everything below is my work on top:
+
+**Infrastructure, swapped behind the existing interfaces**
+- Inference → Groq free tier, or local Ollama for a fully offline run
+- Embeddings → `sentence-transformers` on CPU
+- Vector store → ChromaDB, persisted to disk
+- Database → SQLite, including a translation shim for the PostgreSQL idioms the
+  original queries used (`$n` placeholders, `NOW()`, `::casts`, `ILIKE`,
+  `INTERVAL`, `EXTRACT`, and `STDDEV`/`VARIANCE` registered as SQLite aggregates)
+- Forecast training → scikit-learn on CPU, with a real chronological split
+
+**Bugs found and fixed while making it actually work**
+- The intent classifier matched keywords as *substrings*, so `"Acme Steel Bolts"`
+  matched `bol` (bill of lading) and every stock question was answered by the
+  document agent. Replaced with whole-word weighted scoring; 29 regression tests
+  pin the traps.
+- Asking *"show me recent safety incidents"* matched the word "incident", fell
+  into the reporting branch, and **filed a new incident describing the question**.
+  A read query writing to the database. Added a read intent and a read-only
+  incident tool.
+- The MCP registry keyed tools on a fresh UUID per discovery pass, so 19 tools
+  had grown to 90 duplicate entries.
+- `GET /document/status` read the database while the pipeline wrote only a JSON
+  file, so a finished document reported "Preprocessing 0%" indefinitely.
+- A duplicated flex container meant every page rendered in a ~60%-wide column.
+- Documents with no extractable text were scored 4.2/5 and auto-approved. They
+  are now flagged for review with a plain explanation.
+
+**New**
+- A dedicated inventory agent that answers from SQL rows rather than the model
+- An Import Data screen so you can load your own CSVs
+- Routing transparency in the chat — which agent answered, and which terms
+  triggered it
+- 45 tests where there were none for this layer
 
 ## Why this exists
 

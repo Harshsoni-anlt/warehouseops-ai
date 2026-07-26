@@ -57,7 +57,7 @@ class UserRole(Enum):
 class SourceAttribution:
     """Source attribution information."""
     source_type: str  # "database", "vector_search", "knowledge_base", "api"
-    source_name: str  # "PostgreSQL", "Milvus", "SAP EWM", etc.
+    source_name: str  # "SQLite", "ChromaDB", "WMS", etc.
     source_id: Optional[str] = None
     confidence: float = 0.0
     timestamp: Optional[datetime] = None
@@ -387,7 +387,7 @@ class ResponseValidator:
                 elif route == "vector":
                     attributions.append(SourceAttribution(
                         source_type="vector_search",
-                        source_name="Milvus Vector Database",
+                        source_name="ChromaDB Vector Store",
                         confidence=0.85,
                         timestamp=datetime.now()
                     ))

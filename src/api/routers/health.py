@@ -79,9 +79,9 @@ async def check_redis_health() -> dict:
 async def check_milvus_health() -> dict:
     """Check vector database (ChromaDB) connectivity."""
     try:
-        from src.retrieval.vector.milvus_retriever import get_milvus_retriever
+        from src.retrieval.vector.chroma_retriever import get_chroma_retriever
 
-        retriever = await get_milvus_retriever()
+        retriever = await get_chroma_retriever()
         healthy = await retriever.health_check()
         if healthy:
             return {"status": "healthy", "message": "Vector store connection successful"}

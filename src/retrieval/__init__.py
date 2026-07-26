@@ -31,7 +31,7 @@ This package provides comprehensive retrieval capabilities including:
 """
 
 from .structured.sql_retriever import SQLRetriever
-from .vector.milvus_retriever import MilvusRetriever
+from .vector.chroma_retriever import ChromaRetriever
 from .vector.embedding_service import EmbeddingService
 from .vector.enhanced_retriever import EnhancedVectorRetriever
 from .enhanced_hybrid_retriever import EnhancedHybridRetriever
@@ -60,7 +60,7 @@ from .response_quality import (
 __all__ = [
     # Core retrievers
     'SQLRetriever',
-    'MilvusRetriever', 
+    'ChromaRetriever', 
     'EmbeddingService',
     'EnhancedVectorRetriever',
     'EnhancedHybridRetriever',

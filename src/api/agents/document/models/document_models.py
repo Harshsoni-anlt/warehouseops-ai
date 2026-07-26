@@ -190,7 +190,7 @@ class RoutingDecision(BaseModel):
 class DocumentSearchMetadata(BaseModel):
     """Document search and retrieval metadata."""
 
-    search_vector_id: str = Field(..., description="Milvus vector ID")
+    search_vector_id: str = Field(..., description="Vector store record ID")
     embedding_model: str = Field(..., description="Embedding model used")
     extracted_text: str = Field(..., description="Extracted text content")
     key_entities: Dict[str, Any] = Field(

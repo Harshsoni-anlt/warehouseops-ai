@@ -51,7 +51,11 @@ except ImportError:
 class GuardrailsConfig:
     """Configuration for Guardrails."""
 
-    rails_file: str = "data/config/guardrails/rails.yaml"
+    # config.yml is the live configuration (OpenAI-compatible endpoint -> Groq,
+    # local FastEmbed embeddings). rails.yaml was the original vendor NIM
+    # config and pointed at integrate.api.nvidia.com, which contradicted the
+    # whole premise of this build and would have made a real network call.
+    rails_file: str = "data/config/guardrails/config.yml"
     api_key: str = os.getenv("RAIL_API_KEY") or os.getenv("GROQ_API_KEY") or os.getenv("NVIDIA_API_KEY", "")
     base_url: str = os.getenv(
         "RAIL_API_URL", "https://api.groq.com/openai/v1"

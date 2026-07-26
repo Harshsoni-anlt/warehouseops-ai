@@ -27,7 +27,7 @@ import asyncio
 
 from .vector.chunking_service import ChunkingService, Chunk
 from .vector.enhanced_retriever import EnhancedVectorRetriever, EnhancedSearchResult, RetrievalConfig
-from .vector.milvus_retriever import MilvusRetriever
+from .vector.chroma_retriever import ChromaRetriever
 from .vector.embedding_service import EmbeddingService
 from .structured.sql_retriever import SQLRetriever
 from .structured.inventory_queries import InventoryQueries
@@ -75,12 +75,12 @@ class EnhancedHybridRetriever:
     def __init__(
         self,
         sql_retriever: Optional[SQLRetriever] = None,
-        milvus_retriever: Optional[MilvusRetriever] = None,
+        chroma_retriever: Optional[ChromaRetriever] = None,
         embedding_service: Optional[EmbeddingService] = None,
         retrieval_config: Optional[RetrievalConfig] = None
     ):
         self.sql_retriever = sql_retriever
-        self.milvus_retriever = milvus_retriever
+        self.chroma_retriever = chroma_retriever
         self.embedding_service = embedding_service
         
         # Initialize chunking service
@@ -91,9 +91,9 @@ class EnhancedHybridRetriever:
         )
         
         # Initialize enhanced vector retriever
-        if milvus_retriever and embedding_service:
+        if chroma_retriever and embedding_service:
             self.enhanced_vector_retriever = EnhancedVectorRetriever(
-                milvus_retriever=milvus_retriever,
+                chroma_retriever=chroma_retriever,
                 embedding_service=embedding_service,
                 config=retrieval_config
             )
@@ -120,7 +120,7 @@ class EnhancedHybridRetriever:
         try:
             # Import here to avoid circular imports
             from .structured.sql_retriever import get_sql_retriever
-            from .vector.milvus_retriever import get_milvus_retriever
+            from .vector.chroma_retriever import get_chroma_retriever
             from .vector.embedding_service import get_embedding_service
             
             # Initialize services if not provided
@@ -128,16 +128,16 @@ class EnhancedHybridRetriever:
                 self.sql_retriever = await get_sql_retriever()
                 self.inventory_queries = InventoryQueries(self.sql_retriever)
             
-            if not self.milvus_retriever:
-                self.milvus_retriever = await get_milvus_retriever()
+            if not self.chroma_retriever:
+                self.chroma_retriever = await get_chroma_retriever()
             
             if not self.embedding_service:
                 self.embedding_service = await get_embedding_service()
             
             # Re-initialize enhanced vector retriever with services
-            if self.milvus_retriever and self.embedding_service:
+            if self.chroma_retriever and self.embedding_service:
                 self.enhanced_vector_retriever = EnhancedVectorRetriever(
-                    milvus_retriever=self.milvus_retriever,
+                    chroma_retriever=self.chroma_retriever,
                     embedding_service=self.embedding_service,
                     config=RetrievalConfig()
                 )
@@ -486,7 +486,7 @@ class EnhancedHybridRetriever:
                 
                 all_chunks.extend(chunks)
             
-            # Convert chunks to documents for Milvus
+            # Convert chunks to documents for the vector store
             documents_for_milvus = []
             for chunk in all_chunks:
                 doc = {
@@ -508,8 +508,8 @@ class EnhancedHybridRetriever:
                 }
                 documents_for_milvus.append(doc)
             
-            # Insert into Milvus
-            success = await self.milvus_retriever.insert_documents(documents_for_milvus)
+            # Insert into the vector store
+            success = await self.chroma_retriever.insert_documents(documents_for_milvus)
             
             if success:
                 logger.info(f"Successfully added {len(all_chunks)} chunks from {len(documents)} documents")

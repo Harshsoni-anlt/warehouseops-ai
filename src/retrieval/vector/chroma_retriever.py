@@ -9,10 +9,10 @@
 """
 Vector retriever for warehouse operations (ChromaDB backend).
 
-Ported from Milvus to a local, persistent ChromaDB collection so the assistant
+Backed by a local, persistent ChromaDB collection so the assistant
 runs on a laptop with no vector-database server. The public surface — the class
-name `MilvusRetriever`, `MilvusConfig`, `SearchResult`, and the
-`get_milvus_retriever` / `close_milvus_retriever` factories — is intentionally
+name `ChromaRetriever`, `ChromaConfig`, `SearchResult`, and the
+`get_chroma_retriever` / `close_chroma_retriever` factories — is intentionally
 preserved so existing call sites keep working unchanged. (File/name rename is a
 later cosmetic step.)
 """
@@ -37,7 +37,7 @@ _DEFAULT_CHROMA_DIR = os.path.join(_REPO_ROOT_DIR, "data", "chroma")
 
 
 @dataclass
-class MilvusConfig:
+class ChromaConfig:
     """Vector store configuration (ChromaDB)."""
 
     persist_directory: str = os.getenv("CHROMA_DIR", _DEFAULT_CHROMA_DIR)
@@ -62,7 +62,7 @@ _EQ_EXPR_RE = re.compile(r'(\w+)\s*==\s*"([^"]*)"')
 
 
 def _expr_to_where(filter_expr: Optional[str]) -> Optional[dict]:
-    """Translate a simple Milvus-style `field == "value"` expression to a
+    """Translate a simple `field == "value"` filter expression to a
     ChromaDB `where` dict. Returns None if nothing usable is found."""
     if not filter_expr:
         return None
@@ -76,11 +76,11 @@ def _expr_to_where(filter_expr: Optional[str]) -> Optional[dict]:
     return {"$and": [{k: v} for k, v in conditions.items()]}
 
 
-class MilvusRetriever:
+class ChromaRetriever:
     """ChromaDB-backed vector retriever for warehouse operations."""
 
-    def __init__(self, config: Optional[MilvusConfig] = None):
-        self.config = config or MilvusConfig()
+    def __init__(self, config: Optional[ChromaConfig] = None):
+        self.config = config or ChromaConfig()
         self._client = None
         self.collection = None
         self._connected = False
@@ -226,21 +226,21 @@ class MilvusRetriever:
 
 
 # Global retriever instance
-_milvus_retriever: Optional[MilvusRetriever] = None
+_chroma_retriever: Optional[ChromaRetriever] = None
 
 
-async def get_milvus_retriever() -> MilvusRetriever:
+async def get_chroma_retriever() -> ChromaRetriever:
     """Get or create the global vector retriever instance."""
-    global _milvus_retriever
-    if _milvus_retriever is None:
-        _milvus_retriever = MilvusRetriever()
-        await _milvus_retriever.connect()
-    return _milvus_retriever
+    global _chroma_retriever
+    if _chroma_retriever is None:
+        _chroma_retriever = ChromaRetriever()
+        await _chroma_retriever.connect()
+    return _chroma_retriever
 
 
-async def close_milvus_retriever() -> None:
+async def close_chroma_retriever() -> None:
     """Close the global vector retriever instance."""
-    global _milvus_retriever
-    if _milvus_retriever:
-        await _milvus_retriever.disconnect()
-        _milvus_retriever = None
+    global _chroma_retriever
+    if _chroma_retriever:
+        await _chroma_retriever.disconnect()
+        _chroma_retriever = None

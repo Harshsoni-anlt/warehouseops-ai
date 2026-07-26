@@ -16,7 +16,7 @@
 """
 Hybrid Retriever for Warehouse Operations
 
-Combines structured SQL retrieval (TimescaleDB/Postgres) with vector retrieval (Milvus)
+Combines structured SQL retrieval (SQLite) with vector retrieval (ChromaDB)
 to provide comprehensive search capabilities for warehouse operations.
 """
 
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import asyncio
 from .structured.sql_retriever import SQLRetriever, get_sql_retriever
 from .structured.inventory_queries import InventoryQueries, InventoryItem
-from .vector.milvus_retriever import MilvusRetriever, get_milvus_retriever, SearchResult
+from .vector.chroma_retriever import ChromaRetriever, get_chroma_retriever, SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class HybridRetriever:
     
     def __init__(self):
         self.sql_retriever: Optional[SQLRetriever] = None
-        self.milvus_retriever: Optional[MilvusRetriever] = None
+        self.chroma_retriever: Optional[ChromaRetriever] = None
         self.inventory_queries: Optional[InventoryQueries] = None
     
     async def initialize(self) -> None:
@@ -67,8 +67,8 @@ class HybridRetriever:
             self.sql_retriever = await get_sql_retriever()
             self.inventory_queries = InventoryQueries(self.sql_retriever)
             
-            # Initialize Milvus retriever
-            self.milvus_retriever = await get_milvus_retriever()
+            # Initialize the vector retriever
+            self.chroma_retriever = await get_chroma_retriever()
             
             logger.info("Hybrid retriever initialized successfully")
             
@@ -195,13 +195,13 @@ class HybridRetriever:
     ) -> List[SearchResult]:
         """Search vector database for documentation."""
         try:
-            if not self.milvus_retriever:
+            if not self.chroma_retriever:
                 return []
             
             # TODO: Generate embedding for query
             # For now, return empty results until embedding service is implemented
             # query_embedding = await self._generate_embedding(context.query)
-            # results = await self.milvus_retriever.search_similar(
+            # results = await self.chroma_retriever.search_similar(
             #     query_embedding=query_embedding,
             #     top_k=context.limit,
             #     score_threshold=context.score_threshold
@@ -273,12 +273,12 @@ class HybridRetriever:
             if self.sql_retriever:
                 sql_healthy = await self.sql_retriever.health_check()
             
-            if self.milvus_retriever:
-                milvus_healthy = await self.milvus_retriever.health_check()
+            if self.chroma_retriever:
+                milvus_healthy = await self.chroma_retriever.health_check()
             
             return {
                 "sql_retriever": sql_healthy,
-                "milvus_retriever": milvus_healthy,
+                "chroma_retriever": milvus_healthy,
                 "overall": sql_healthy and milvus_healthy
             }
             
@@ -286,7 +286,7 @@ class HybridRetriever:
             logger.error(f"Health check failed: {e}")
             return {
                 "sql_retriever": False,
-                "milvus_retriever": False,
+                "chroma_retriever": False,
                 "overall": False
             }
 

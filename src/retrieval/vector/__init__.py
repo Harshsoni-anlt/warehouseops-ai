@@ -16,11 +16,11 @@
 """
 Vector Retrieval Module for Warehouse Operations
 
-This module provides vector-based retrieval capabilities using Milvus
+This module provides vector-based retrieval capabilities using ChromaDB
 for semantic search over SOPs, manuals, and other unstructured content.
 """
 
-from .milvus_retriever import MilvusRetriever
+from .chroma_retriever import ChromaRetriever
 from .embedding_service import EmbeddingService
 from .hybrid_ranker import HybridRanker
 from .chunking_service import ChunkingService, Chunk, ChunkMetadata
@@ -29,7 +29,7 @@ from .evidence_scoring import EvidenceScoringEngine, EvidenceSource, EvidenceIte
 from .clarifying_questions import ClarifyingQuestionsEngine, QuestionSet, ClarifyingQuestion, AmbiguityType, QuestionPriority
 
 __all__ = [
-    "MilvusRetriever",
+    "ChromaRetriever",
     "EmbeddingService", 
     "HybridRanker",
     "ChunkingService",

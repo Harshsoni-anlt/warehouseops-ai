@@ -28,7 +28,7 @@ from collections import defaultdict
 import asyncio
 
 from .chunking_service import Chunk, ChunkMetadata
-from .milvus_retriever import MilvusRetriever, SearchResult
+from .chroma_retriever import ChromaRetriever, SearchResult
 from .embedding_service import EmbeddingService
 from .evidence_scoring import EvidenceScoringEngine, EvidenceSource, EvidenceItem, EvidenceScore
 from .clarifying_questions import ClarifyingQuestionsEngine, QuestionSet
@@ -79,11 +79,11 @@ class EnhancedVectorRetriever:
     
     def __init__(
         self,
-        milvus_retriever: MilvusRetriever,
+        chroma_retriever: ChromaRetriever,
         embedding_service: EmbeddingService,
         config: Optional[RetrievalConfig] = None
     ):
-        self.milvus_retriever = milvus_retriever
+        self.chroma_retriever = chroma_retriever
         self.embedding_service = embedding_service
         self.config = config or RetrievalConfig()
         self.evidence_scoring_engine = EvidenceScoringEngine()
@@ -245,7 +245,7 @@ class EnhancedVectorRetriever:
             filter_expr = self._build_filter_expression(filters) if filters else None
             
             # Search with Milvus
-            results = await self.milvus_retriever.search_similar(
+            results = await self.chroma_retriever.search_similar(
                 query_embedding=query_embedding,
                 top_k=top_k,
                 filter_expr=filter_expr,
