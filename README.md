@@ -83,10 +83,10 @@ cd warehouseops-ai
 ```
 
 `run.sh` creates a virtualenv, installs dependencies, writes a `.env` with a
-random JWT secret, and **creates and seeds the SQLite database** — 20 inventory
-SKUs, 12 equipment assets, 180 days of stock movements, tasks, incidents and
-telemetry, so nothing is empty. First run takes a few minutes (it downloads
-PyTorch); after that it starts in seconds.
+random JWT secret, and **creates and seeds the SQLite database** — 16 inventory
+SKUs, 12 equipment assets, ~3,300 stock movements across 180 days, 40 tasks, 14
+safety incidents and equipment telemetry, so no page is empty. First run takes a
+few minutes (it downloads PyTorch); after that it starts in seconds.
 
 To enable the assistant, add your key to `.env`:
 
