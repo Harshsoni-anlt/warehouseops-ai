@@ -370,9 +370,20 @@ class ToolDiscoveryService:
 
         return tools_discovered
 
+    @staticmethod
+    def _tool_key(tool: DiscoveredTool) -> str:
+        """Stable identity for a tool: its source and its name.
+
+        `tool_id` defaults to a fresh uuid4 per instance, so keying the registry
+        on it meant every re-discovery pass inserted the same tool again under a
+        new id. Eighteen real tools had become ninety entries — the MCP page
+        listed each one five times and the landing page counted them all.
+        """
+        return f"{tool.source}:{tool.name}"
+
     async def _register_discovered_tool(self, tool: DiscoveredTool) -> None:
         """Register a discovered tool with security validation."""
-        tool_key = tool.tool_id
+        tool_key = self._tool_key(tool)
 
         # Security check: Validate tool before registration
         try:
@@ -424,6 +435,8 @@ class ToolDiscoveryService:
         # Update existing tool or add new one
         if tool_key in self.discovered_tools:
             existing_tool = self.discovered_tools[tool_key]
+            # Keep the original tool_id so anything holding a reference to it
+            # (execution plans, UI selections) stays valid across rediscovery.
             existing_tool.description = tool.description
             existing_tool.parameters = tool.parameters
             existing_tool.capabilities = tool.capabilities

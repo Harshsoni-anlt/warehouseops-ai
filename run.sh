@@ -62,16 +62,37 @@ if [ ! -f "$VENV/.embed-warmed" ]; then
     && touch "$VENV/.embed-warmed" || echo "   (skip — will download on first chat instead)"
 fi
 
-# 3. Config check
+# 3. Config — create .env on first run rather than failing.
 if [ ! -f ".env" ]; then
-  echo "!! No .env found. Copy .env.example to .env and set GROQ_API_KEY."
-  echo "   cp .env.example .env"
-  exit 1
+  echo "==> No .env found; creating one from .env.example…"
+  cp .env.example .env
+  # A random JWT secret per install, so nobody ships the placeholder.
+  SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  python - "$SECRET" <<'PY'
+import pathlib, sys
+p = pathlib.Path(".env")
+p.write_text(
+    p.read_text().replace(
+        "JWT_SECRET_KEY=your-strong-random-secret-minimum-32-characters-change-this",
+        f"JWT_SECRET_KEY={sys.argv[1]}",
+    )
+)
+PY
+  echo "    Created .env with a random JWT secret."
 fi
 
-# 4. Database (ships prebuilt + seeded; this is idempotent and just re-verifies)
+if ! grep -qE '^GROQ_API_KEY=gsk_' .env; then
+  echo ""
+  echo "    Note: GROQ_API_KEY is not set in .env."
+  echo "    Everything except the assistant and document extraction still works."
+  echo "    Get a free key (no card) at https://console.groq.com/keys and add it:"
+  echo "      GROQ_API_KEY=gsk_..."
+  echo ""
+fi
+
+# 4. Database — created and seeded on first run.
 if [ ! -f "data/warehouse.db" ]; then
-  echo "==> Initializing local database…"
+  echo "==> Creating and seeding the local database…"
   python scripts/setup/init_local_db.py
 fi
 

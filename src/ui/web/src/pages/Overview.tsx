@@ -25,11 +25,14 @@ const capabilities = [
     desc: 'Upload an invoice — text extraction plus an LLM pulls vendor, dates and line items.' },
 ];
 
-const stats = [
-  { value: '16',  label: 'inventory SKUs',   hint: 'Real product catalog with locations and reorder points', spark: [6, 9, 7, 11, 9, 13, 12] },
-  { value: '180', label: 'days of demand',   hint: '~3,300 movements with weekday and seasonal patterns',    spark: [4, 7, 6, 10, 8, 12, 15] },
-  { value: '12',  label: 'equipment assets', hint: 'Forklifts, AMRs, AGVs, chargers, conveyors',              spark: [8, 8, 10, 9, 11, 10, 12] },
-  { value: '18',  label: 'MCP tools',        hint: 'Discoverable agent actions over Model Context Protocol',  spark: [2, 5, 6, 9, 12, 14, 16] },
+// Counts are read from the API, not hard-coded. The headline feature of this
+// demo is importing your own data — a landing page that still insists there
+// are 16 SKUs after you have loaded 400 of your own undermines the whole point.
+const statCards = [
+  { key: 'inventory', label: 'inventory SKUs',   hint: 'Product catalogue with locations and reorder points', spark: [6, 9, 7, 11, 9, 13, 12] },
+  { key: 'movements', label: 'days of demand',   hint: 'Stock movements with weekday and seasonal patterns',   spark: [4, 7, 6, 10, 8, 12, 15] },
+  { key: 'equipment', label: 'equipment assets', hint: 'Forklifts, AMRs, AGVs, chargers, conveyors',           spark: [8, 8, 10, 9, 11, 10, 12] },
+  { key: 'mcp',       label: 'MCP tools',        hint: 'Discoverable agent actions over Model Context Protocol', spark: [2, 5, 6, 9, 12, 14, 16] },
 ];
 
 /** Tiny inline sparkline — signals "this is live data", costs nothing. */
@@ -63,6 +66,28 @@ const flow = [
 
 const Overview: React.FC = () => {
   const navigate = useNavigate();
+  const [counts, setCounts] = React.useState<Record<string, string>>({
+    inventory: '—', movements: '—', equipment: '—', mcp: '—',
+  });
+
+  React.useEffect(() => {
+    const json = (url: string) => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+    (async () => {
+      const [inv, eq, mcp] = await Promise.all([
+        json('/api/v1/inventory/items?limit=1000'),
+        json('/api/v1/equipment'),
+        json('/api/v1/mcp/tools'),
+      ]);
+      const len = (v: any) => (Array.isArray(v) ? v.length : Array.isArray(v?.items) ? v.items.length : null);
+      setCounts({
+        inventory: len(inv)?.toLocaleString() ?? '—',
+        // Demand history is the horizon the forecaster trains on, not a row count.
+        movements: '180',
+        equipment: len(eq)?.toLocaleString() ?? '—',
+        mcp: (mcp?.total_tools ?? len(mcp?.tools))?.toLocaleString() ?? '—',
+      });
+    })();
+  }, []);
 
   return (
     <Box>
@@ -118,7 +143,7 @@ const Overview: React.FC = () => {
         <Typography variant="body2">pre-loaded so nothing is empty</Typography>
       </Stack>
       <Grid container spacing={2} sx={{ mb: 5 }}>
-        {stats.map(s => (
+        {statCards.map(s => (
           <Grid item xs={6} md={3} key={s.label}>
             <Card
               sx={{
@@ -134,7 +159,7 @@ const Overview: React.FC = () => {
               <CardContent>
                 <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 0.5 }}>
                   <Typography sx={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1, color: 'primary.dark' }} className="tabular">
-                    {s.value}
+                    {counts[s.key as string]}
                   </Typography>
                   <Spark points={s.spark} />
                 </Stack>
